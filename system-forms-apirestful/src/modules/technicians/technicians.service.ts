@@ -1,0 +1,152 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In } from 'typeorm';
+import { Technician } from '../../entities/technician.entity';
+import { Tower } from '../../entities/tower.entity';
+import { CreateTechnicianDto } from './dto/create-technician.dto';
+import { UpdateTechnicianDto } from './dto/update-technician.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginatedResult } from '../../common/interfaces/pagination.interface';
+import { RequestUser } from '../../common/interfaces/auth.interface';
+
+@Injectable()
+export class TechniciansService {
+  constructor(
+    @InjectRepository(Technician)
+    private technicianRepository: Repository<Technician>,
+    @InjectRepository(Tower)
+    private towerRepository: Repository<Tower>,
+  ) {}
+
+  async create(createTechnicianDto: CreateTechnicianDto): Promise<Technician> {
+    const { towerId, ...technicianData } = createTechnicianDto;
+
+    // Validate tower if provided
+    if (towerId) {
+      const tower = await this.towerRepository.findOne({
+        where: { id: towerId },
+      });
+      if (!tower) {
+        throw new BadRequestException('Invalid tower ID');
+      }
+    }
+
+    const technician = this.technicianRepository.create({
+      ...technicianData,
+      towerId,
+    });
+
+    return this.technicianRepository.save(technician);
+  }
+
+  async findAll(paginationDto: PaginationDto, user?: RequestUser): Promise<PaginatedResult<Technician>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.technicianRepository
+      .createQueryBuilder('technician')
+      .leftJoinAndSelect('technician.tower', 'tower')
+      .leftJoinAndSelect('technician.evaluators', 'evaluators');
+
+    // Filter by user's towers if not dev/superadmin
+    if (user && !['dev', 'superadmin'].includes(user.roleName)) {
+      if (user.towerIds.length > 0) {
+        queryBuilder.where('technician.towerId IN (:...towerIds)', { towerIds: user.towerIds });
+      } else {
+        queryBuilder.where('1 = 0'); // No access to any technicians
+      }
+    }
+
+    const [technicians, total] = await queryBuilder
+      .orderBy('technician.name', 'ASC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data: technicians,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findOne(id: string, user?: RequestUser): Promise<Technician> {
+    const queryBuilder = this.technicianRepository
+      .createQueryBuilder('technician')
+      .leftJoinAndSelect('technician.tower', 'tower')
+      .leftJoinAndSelect('technician.evaluators', 'evaluators')
+      .where('technician.id = :id', { id });
+
+    // Filter by user's towers if not dev/superadmin
+    if (user && !['dev', 'superadmin'].includes(user.roleName)) {
+      if (user.towerIds.length > 0) {
+        queryBuilder.andWhere('technician.towerId IN (:...towerIds)', { towerIds: user.towerIds });
+      } else {
+        queryBuilder.andWhere('1 = 0'); // No access
+      }
+    }
+
+    const technician = await queryBuilder.getOne();
+
+    if (!technician) {
+      throw new NotFoundException('Technician not found');
+    }
+
+    return technician;
+  }
+
+  async update(id: string, updateTechnicianDto: UpdateTechnicianDto, user?: RequestUser): Promise<Technician> {
+    const technician = await this.findOne(id, user);
+
+    // Validate tower if provided
+    if (updateTechnicianDto.towerId) {
+      const tower = await this.towerRepository.findOne({
+        where: { id: updateTechnicianDto.towerId },
+      });
+      if (!tower) {
+        throw new BadRequestException('Invalid tower ID');
+      }
+    }
+
+    await this.technicianRepository.update(id, updateTechnicianDto);
+    return this.findOne(id, user);
+  }
+
+  async remove(id: string, user?: RequestUser): Promise<void> {
+    const technician = await this.findOne(id, user);
+    await this.technicianRepository.remove(technician);
+  }
+
+  async findByTower(towerId: number): Promise<Technician[]> {
+    return this.technicianRepository.find({
+      where: { towerId },
+      relations: ['tower', 'evaluators'],
+      order: { name: 'ASC' },
+    });
+  }
+
+  async assignEvaluator(technicianId: string, evaluatorId: string): Promise<Technician> {
+    const technician = await this.technicianRepository.findOne({
+      where: { id: technicianId },
+      relations: ['evaluators'],
+    });
+
+    if (!technician) {
+      throw new NotFoundException('Technician not found');
+    }
+
+    // Add evaluator if not already assigned
+    const isAlreadyAssigned = technician.evaluators.some(evaluator => evaluator.id === evaluatorId);
+    if (!isAlreadyAssigned) {
+      const evaluator = { id: evaluatorId } as any;
+      technician.evaluators.push(evaluator);
+      await this.technicianRepository.save(technician);
+    }
+
+    return this.findOne(technicianId);
+  }
+}

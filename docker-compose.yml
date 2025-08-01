@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres_encuestas
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - encuestas_net
+
+  pgadmin:
+    image: dpage/pgadmin4:8.5
+    container_name: pgadmin_encuestas
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8085:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - encuestas_net
+
+volumes:
+  pgdata:
+  pgadmin_data:
+
+networks:
+  encuestas_net:
+    driver: bridge
