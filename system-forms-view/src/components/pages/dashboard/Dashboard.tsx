@@ -2,10 +2,10 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
+import { useAuth } from "@/providers/AuthProvider" // ✅ Usar el hook del provider
 import { useFormStore } from "@/stores/form-store"
 import { useTowersStore } from "@/stores/towers-store" // ✅ Agregar importación
-import { getTowerColor } from "@/constants/colors"
+import { getTowerColor, getClientFormColors } from "@/constants/colors"
 import { Tower } from "@/types/towers-types" // o donde tengas definido Tower
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,40 +16,21 @@ import Link from "next/link"
 
 
 export default function Dashboard() {
-  const { user, isAuthenticated = true, checkAuth, isInitialized } = useAuthStore()
-  const { forms, getForms, isLoading, error, pendingForms, getPendingForms } = useFormStore()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const { forms, getForms, isLoading: formsLoading, error, pendingForms } = useFormStore()
   const { towers, fetchTowers } = useTowersStore()
-  const router = useRouter()
 
-
-  useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
-
-  useEffect(() => {
-    if (isInitialized) {
-      if (!isAuthenticated) {
-        router.push("/auth/login")
-      }
-    }
-  }, [isInitialized, isAuthenticated, router])
-
-  // ✅ Cargar formularios Y torres
+  // ✅ AGREGAR ESTE useEffect:
   useEffect(() => {
     if (isAuthenticated && user) {
+      console.log('🚀 Cargando formularios y torres...');
       getForms()
-      fetchTowers() // ✅ Cargar torres también
+      fetchTowers()
     }
   }, [isAuthenticated, user, getForms, fetchTowers])
 
-  // Cargar formularios pendientes
-  useEffect(() => {
-    if (isAuthenticated) {
-      getPendingForms()
-    }
-  }, [isAuthenticated, getPendingForms])
-
-  if (!isInitialized || !user) {
+  // ✅ Esperar a que termine de cargar la autenticación
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -60,80 +41,88 @@ export default function Dashboard() {
     )
   }
 
+  // ✅ Si no está autenticado, redirigir (esto lo maneja el AuthProvider)
+  if (!isAuthenticated || !user) {
+    return null; // El AuthProvider se encarga de redirigir
+  }
+
   // Vista para clientes - actualizar la lógica
   if (user.role === "client") {
-    // ✅ Esperar a que las torres se carguen
-    if (towers.length === 0) {
-      return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando torres...</p>
-          </div>
-        </div>
-      )
-    }
+    const userTowerId = user.towers?.[0]?.id;
 
-    // ✅ Manejo más robusto del userTowerId
-    let userTowerId: number | null = null;
+    // ✅ OPCIONAL: Solo si quieres mostrar el nombre de la torre
+    const userTower = towers.find(tower => Number(tower.id) === Number(userTowerId));
 
-    // ✅ CAMBIO: usar user.towers en lugar de user.tower
-    if (user.towers && user.towers.length > 0) {
-      // El usuario tiene torres asignadas, usar la primera
-      userTowerId = user.towers[0].id;
-    }
-
-    console.log('user.towers:', user.towers);
-    console.log('userTowerId procesado:', userTowerId);
-    console.log('towers disponibles:', towers);
-
-    const userTower = towers.find(tower =>
-      userTowerId !== null && Number(tower.id) === Number(userTowerId)
+    // ✅ CAMBIO: Filtrar formularios del array global por la torre del usuario
+    const clientForms = forms.filter(form =>
+      form.towers?.some(tower => Number(tower.id) === Number(userTowerId))
     );
 
-    // ✅ AQUÍ está el cambio - usar los forms de la torre directamente
-    const clientForms = (userTower as any)?.forms || [];
+    // ❌ ELIMINAR ESTA CONDICIÓN:
+    // if (towers.length === 0) { return loading... }
 
-    console.log('userTower encontrada:', userTower);
+    console.log('userTowerId:', userTowerId);
     console.log('clientForms:', clientForms);
+    console.log('forms disponibles:', forms);
 
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="max-w-4xl mx-auto p-6">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Bienvenido, {user.name}</h1>
-            <p className="text-gray-600 mt-2">Completa las evaluaciones disponibles para {userTower?.name}</p>
+            <p className="text-gray-600 mt-2">Completa las evaluaciones disponibles para {userTower?.name || 'tu torre'}</p>
           </div>
           {clientForms.length > 0 ? (
-            clientForms.map((form: any) => (
-              <Card key={form.id} className="shadow-lg border-gray-200 bg-white mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-gray-900">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    {form.title}
-                  </CardTitle>
-                  <CardDescription className="text-gray-600">{form.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-gray-600">
-                        Torre: {userTower?.name}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Estado: {form.isActive ? 'Activo' : 'Inactivo'}
-                      </p>
+            clientForms.map((form: any, index: number) => {
+              const formColors = getClientFormColors(index);
+
+              return (
+                <Card
+                  key={form.id}
+                  className="shadow-lg border-0 mb-6 overflow-hidden"
+                  style={{
+                    backgroundColor: formColors.background,
+                    borderLeft: `4px solid ${formColors.border}`
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-gray-900">
+                      <div
+                        className="p-1.5 rounded-full"
+                        style={{ backgroundColor: formColors.border }}
+                      >
+                        <FileText className="h-4 w-4 text-white" />
+                      </div>
+                      {form.title}
+                    </CardTitle>
+                    <CardDescription className="text-gray-700">{form.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between items-center">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600">
+                          Torre: <span className="font-medium text-gray-800">{userTower?.name}</span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Estado: <span className={`font-medium ${form.isActive ? 'text-green-700' : 'text-gray-500'}`}>
+                            {form.isActive ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </p>
+                      </div>
+                      <Link href={`/forms/${form.id}/fill`}>
+                        <Button
+                          className="text-white hover:opacity-90 shadow-lg"
+                          style={{ backgroundColor: formColors.border }}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          Completar Evaluación
+                        </Button>
+                      </Link>
                     </div>
-                    <Link href={`/forms/${form.id}/fill`}>
-                      <Button className="bg-blue-700 hover:bg-blue-800 text-white">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Completar Evaluación
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              );
+            })
           ) : (
             <Card className="border-gray-200 bg-white">
               <CardContent className="text-center py-12">
@@ -244,7 +233,10 @@ export default function Dashboard() {
 
                                 return (
                                   <span key={tower.id} className="inline-flex items-center ml-1">
-                                    <span className={`inline-block w-2 h-2 rounded-full ${getTowerColor(towerIndex)}`}></span>
+                                    <span
+                                      className="inline-block w-2 h-2 rounded-full"
+                                      style={{ backgroundColor: getTowerColor(towerIndex) }}
+                                    ></span>
                                     <span className="ml-1 text-xs">{tower.name}</span>
                                   </span>
                                 );

@@ -1,10 +1,8 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
+import { useAuth } from "@/providers/AuthProvider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,15 +15,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
 
-  const { login, isLoading } = useAuthStore()
+  const { login, isLoading } = useAuth()
   const router = useRouter()
+
+  // No mostrar nada mientras carga
+  if (isLoading) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
     try {
-      await login(email, password)
+
+      const result = await login(email, password)
+      console.log("Login exitoso:", result);
+      
       router.push("/dashboard")
     } catch (err) {
       setError("Credenciales inválidas. Intenta de nuevo.")

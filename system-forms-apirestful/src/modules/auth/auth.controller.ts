@@ -1,8 +1,10 @@
-import { Controller, Post, Body, UseGuards, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Res, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Response } from 'express';
+import { GetUser } from '../../common/decorators/get-user.decorator';
+import { RequestUser } from 'src/common/interfaces/auth.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -19,6 +21,31 @@ export class AuthController {
       maxAge: 24 * 60 * 60 * 1000, // 1 día
     });
 
-    res.json({user: result.user});
+    res.json({ user: result.user });
+  }
+
+  @Get('check')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  checkSession(@GetUser() user: RequestUser) {
+    return {
+      valid: true,
+      user: {
+        id: user.id,
+        name: user.name, 
+        email: user.email,
+        role: user.role,
+        towers: user.towers || [], // <-- Agregado
+      },
+      message: 'Session is active',
+    };
+  }
+
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  logout(@Res() res: Response) {
+    res.clearCookie('access_token');
+    res.json({ success: true, message: 'Logged out' });
   }
 }

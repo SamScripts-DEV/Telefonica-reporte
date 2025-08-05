@@ -301,7 +301,8 @@ export default function CreateForm() {
                     return (
                       <div
                         key={tower.id}
-                        className={`p-4 rounded-xl ${getTowerColor(index)} text-white shadow-lg hover:shadow-xl transition-all cursor-pointer ${formData.targetTowers.includes(tower.id) ? "ring-4 ring-white ring-opacity-50" : ""}`}
+                        style={{ backgroundColor: getTowerColor(index) }}
+                        className={`p-4 rounded-xl text-white shadow-lg hover:shadow-xl transition-all cursor-pointer ${formData.targetTowers.includes(tower.id) ? "ring-4 ring-white ring-opacity-50" : ""}`}
                       >
                         <div className="flex items-center space-x-3">
                           <Checkbox
@@ -318,7 +319,7 @@ export default function CreateForm() {
                     );
                   })}
                 </div>
-                
+
                 {formData.targetTowers.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
                     {formData.targetTowers.map((towerId) => {
@@ -326,7 +327,11 @@ export default function CreateForm() {
                       const towerIndex = towers.findIndex(t => t.id === towerId);
                       
                       return (
-                        <Badge key={towerId} className={`${getTowerColor(towerIndex)} text-white px-3 py-1 border-0`}>
+                        <Badge 
+                          key={towerId} 
+                          style={{ backgroundColor: getTowerColor(towerIndex) }}
+                          className="text-white px-3 py-1 border-0"
+                        >
                           {tower?.name || towerId}
                         </Badge>
                       );

@@ -26,24 +26,28 @@ import { FormStatus } from '../../entities/form.entity';
 export class FormsController {
   constructor(private readonly formsService: FormsService) {}
 
+  //Consumido
   @Post('create')
   @Roles('dev', 'superadmin', 'pm', 'jefe')
   create(@Body() createFormDto: CreateFormDto, @GetUser() user: RequestUser) {
     return this.formsService.create(createFormDto, user);
   }
 
-  @Get('pending')
-  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
-  getPendingForms(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
-    return this.formsService.getPendingFormsForUser(paginationDto, user);
-  }
+  // @Get('pending')
+  // @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
+  // getPendingForms(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
+  //   return this.formsService.getPendingFormsForUser(paginationDto, user);
+  // }
 
+
+  //Consumido
   @Get()
   @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
   findAll(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
     return this.formsService.findAll(paginationDto, user);
   }
 
+  //Consumiendo
   @Get(':id')
   @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
   findOne(@Param('id') id: string, @GetUser() user: RequestUser) {

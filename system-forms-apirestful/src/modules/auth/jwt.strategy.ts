@@ -39,7 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload): Promise<any> {
     const user = await this.userRepository.findOne({
       where: { id: payload.sub, isActive: true },
-      relations: ['role', 'towers', 'groups', 'groups.permissions'],
+      relations: ['role', 'towers'], // <-- Asegúrate que incluya 'towers'
     });
 
     if (!user) {
@@ -49,11 +49,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: user.id,
       email: user.email,
+      name: user.name,
+      role: user.role?.name,
       roleId: user.roleId,
       roleName: user.role?.name,
       towerIds: user.towers?.map(tower => tower.id) || [],
-      groupIds: user.groups?.map(group => group.id) || [],
-      permissions: user.groups?.flatMap(group => group.permissions) || [],
+      towers: user.towers?.map(tower => ({ 
+        id: tower.id, 
+        name: tower.name 
+      })) || [], // <-- Agrega esta línea
     };
   }
 }

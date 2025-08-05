@@ -23,17 +23,23 @@ export const formsApi = {
         }))
     },
 
-    getFormsForClient: async () => {
-        const res = await api.get(api_endpoints.formsforClient.getFormsForClient);
-        return res.data;
-    },
 
     getFormById: async (id: string) => {
         const res = await api.get(api_endpoints.formsforClient.getFormById(id));
         return res.data;
     },
 
-    // ✅ CAMBIO: Incluir técnico en la petición
+    updateForm: async (id: string, updates: Partial<FormCreateRequest>) => {
+        try {
+            const response = await api.patch(api_endpoints.forms.updatedForm(id), updates)
+            return response.data
+        } catch (error) {
+            console.error("Error updating form:", error)
+            throw error
+        }
+    },
+
+    
     submitForm: async (formId: string, answers: Array<{questionId: string, value: string | number}>, technicianId?: string) => {
         const payload = {
             answers,

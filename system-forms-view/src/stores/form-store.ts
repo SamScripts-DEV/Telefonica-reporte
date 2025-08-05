@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { formsApi } from "@/api/forms/forms-endpoints";
 import { Tower } from "@/types/towers-types";
+import { FormCreateRequest } from "@/types/forms-types";
 
 export interface FormQuestion {
   id: string;
@@ -47,10 +48,10 @@ interface FormState {
 
   // API operations
   getForms: () => Promise<void>;
-  getPendingForms: () => Promise<void>;
+ 
   getFormById: (id: string) => Promise<void>; // ✅ AGREGAR: Cambiar a void, guarda en store
   createForm: (formData: any) => Promise<FormData>;
-  updateForm: (id: string, updates: Partial<FormData>) => Promise<void>;
+  updateForm: (id: string, updates: Partial<FormCreateRequest>) => Promise<void>;
   deleteForm: (id: string) => Promise<void>;
 
   // Local state operations
@@ -87,16 +88,7 @@ export const useFormStore = create<FormState>((set, get) => ({
     }
   },
 
-  getPendingForms: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      const response = await formsApi.getFormsForClient();
-      set({ pendingForms: response.data, isLoading: false });
-    } catch (error: any) {
-      console.error("Error fetching pending forms:", error);
-      set({ error: "Error al cargar formularios pendientes", isLoading: false });
-    }
-  },
+  
 
   // ✅ AGREGAR: Cargar formulario específico y guardarlo en el store
   getFormById: async (id: string) => {
@@ -131,19 +123,23 @@ export const useFormStore = create<FormState>((set, get) => ({
   },
 
   updateForm: async (id, updates) => {
-    try {
-      set({ isLoading: true, error: null });
-      set((state) => ({
-        forms: state.forms.map((form) =>
-          form.id === id ? { ...form, ...updates } : form
-        ),
-        isLoading: false,
-      }));
-    } catch (error: any) {
-      console.error("Error updating form:", error);
-      set({ error: "Error al actualizar formulario", isLoading: false });
-    }
-  },
+  try {
+    set({ isLoading: true, error: null });
+    const updatedForm = await formsApi.updateForm(id, updates); // <-- Usa el endpoint real
+    set((state) => ({
+      forms: state.forms.map((form) =>
+        form.id === id ? { ...form, ...updatedForm } : form
+      ),
+      currentForm: updatedForm,
+      isLoading: false,
+    }));
+    return updatedForm;
+  } catch (error: any) {
+    console.error("Error updating form:", error);
+    set({ error: "Error al actualizar formulario", isLoading: false });
+    throw error;
+  }
+},
 
   deleteForm: async (id) => {
     try {

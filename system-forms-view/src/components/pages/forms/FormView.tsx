@@ -143,26 +143,35 @@ export default function FormsView() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {safeForms.map((form, index) => {
-              const headerColor = getFormHeaderColor(index);
-
               return (
                 <Card
                   key={form.id}
                   className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white overflow-hidden"
+                  style={{ borderTop: `4px solid ${getFormHeaderColor(index).replace('bg-', '#')}` }}
                 >
-                  {/* Header colorido */}
-                  <div className={`h-2 ${headerColor}`}></div>
+                  {/* Header colorido - mantener la línea superior */}
+                  <div 
+                    style={{ backgroundColor: getFormHeaderColor(index) }}
+                    className="h-1"
+                  ></div>
 
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className={`p-1.5 rounded-full ${headerColor}`}>
+                          <div 
+                            style={{ backgroundColor: getFormHeaderColor(index) }}
+                            className="p-1.5 rounded-full"
+                          >
                             <FileText className="h-4 w-4 text-white" />
                           </div>
                           <CardTitle className="text-lg text-gray-900">{form.title}</CardTitle>
                         </div>
-                        <CardDescription className="mt-1 text-gray-600">{form.description}</CardDescription>
+                        <CardDescription className="mt-1 text-gray-600">
+                          <div className="whitespace-pre-line max-h-20 overflow-y-auto text-sm leading-relaxed">
+                            {form.description}
+                          </div>
+                        </CardDescription>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -199,7 +208,10 @@ export default function FormsView() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Preguntas:</span>
-                        <Badge className={`${headerColor} text-white border-0`}>
+                        <Badge 
+                          style={{ backgroundColor: getFormHeaderColor(index) }}
+                          className="text-white border-0"
+                        >
                           {(form.questions || []).length}
                         </Badge>
                       </div>
@@ -221,14 +233,14 @@ export default function FormsView() {
                         <div className="flex flex-wrap gap-1">
                           {form.towers && form.towers.length > 0 ? (
                             form.towers.map((tower) => {
-                              // ✅ Buscar el índice real de la torre en el array completo de torres
                               const realTowerIndex = towers.findIndex(t => t.id === tower.id);
-                              const towerIndex = realTowerIndex !== -1 ? realTowerIndex : 0; // Fallback a 0
+                              const towerIndex = realTowerIndex !== -1 ? realTowerIndex : 0;
                               
                               return (
                                 <Badge
                                   key={tower.id}
-                                  className={`${getTowerColor(towerIndex)} text-white text-xs border-0`}
+                                  style={{ backgroundColor: getTowerColor(towerIndex) }}
+                                  className="text-white text-xs border-0"
                                 >
                                   {tower.name}
                                 </Badge>
@@ -253,7 +265,11 @@ export default function FormsView() {
                             </Button>
                           </Link>
                           <Link href={`/forms/${form.id}/edit`} className="flex-1">
-                            <Button size="sm" className={`w-full ${headerColor} hover:opacity-90 text-white border-0`}>
+                            <Button 
+                              size="sm" 
+                              style={{ backgroundColor: getFormHeaderColor(index) }}
+                              className="w-full hover:opacity-90 text-white border-0"
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </Button>

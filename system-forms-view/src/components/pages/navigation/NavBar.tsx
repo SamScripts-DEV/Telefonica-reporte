@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuthStore } from "@/stores/auth-store"
+import { useAuth } from "@/providers/AuthProvider" // Cambia el import
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -10,7 +10,9 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 export function Navbar() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, isLoading } = useAuth()
+  
+  console.log('NavBar - user:', user, 'isLoading:', isLoading) // ✅ Debug
 
   const pathname = usePathname()
 
@@ -30,10 +32,8 @@ export function Navbar() {
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["superadmin","admin"] },
     { href: "/forms", label: "Formularios", icon: FileText, roles: ["superadmin","admin"] },
-    { href: "/reports", label: "Reportes", icon: BarChart, roles: ["superadmin","admin"] }, // Example for future modules
+    { href: "/reports", label: "Reportes", icon: BarChart, roles: ["superadmin","admin"] },
     { href: "/users", label: "Usuarios", icon: Users, roles: ["superadmin","admin"] },
-    // { href: "/groups", label: "Grupos", icon: Group, roles: ["admin"] }, // New link for Groups
-    // { href: "/permissions", label: "Permisos", icon: Shield, roles: ["admin"] }, // New link for Permissions
   ]
 
   return (

@@ -6,6 +6,8 @@ import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFormStore, type FormQuestion } from "@/stores/form-store"
+import { useTowersStore } from "@/stores/towers-store" // ✅ Importar el store de torres
+import { TOWER_COLORS } from "@/constants/colors"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,13 +37,7 @@ const QUESTION_TYPES = [
     color: "bg-blue-500",
     description: "Respuesta de texto libre",
   },
-  {
-    value: "number",
-    label: "Número",
-    icon: Hash,
-    color: "bg-green-500",
-    description: "Respuesta numérica",
-  },
+
 ]
 
 const STAR_DESCRIPTIONS = [
@@ -54,17 +50,16 @@ const STAR_DESCRIPTIONS = [
 
 export default function EditForm({formId}: {formId: string}) {
   const { user, isAuthenticated, checkAuth, isInitialized } = useAuthStore()
-  const { getFormById, updateForm } = useFormStore()
+  const { currentForm, getFormById, updateForm, isLoading } = useFormStore()
+  const { towers, fetchTowers } = useTowersStore() // ✅ Usar el store de torres
   const router = useRouter()
   const params = useParams()
   
 
-  const existingForm = getFormById(formId)
-
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    targetTowers: [] as string[],
+    targetTowers: [] as string[], // ✅ Cambiar a string[]
     isActive: true,
   })
 
@@ -80,6 +75,45 @@ export default function EditForm({formId}: {formId: string}) {
     checkAuth()
   }, [checkAuth])
 
+  // ✅ CARGAR el formulario cuando se monta el componente
+  useEffect(() => {
+    if (formId) {
+      getFormById(formId) // Esto hace la petición al backend
+    }
+  }, [formId, getFormById])
+
+  // ✅ Cargar torres al montar el componente
+  useEffect(() => {
+    fetchTowers()
+  }, [fetchTowers])
+
+  // ✅ POBLAR el estado cuando se carga el formulario
+  useEffect(() => {
+    if (currentForm) {
+      console.log('📝 Formulario cargado:', currentForm);
+      
+      setFormData({
+        title: currentForm.title || "",
+        description: currentForm.description || "",
+        // ✅ Usar los IDs de las torres asignadas
+        targetTowers: (currentForm.towers || []).map((t: {id: string | number}) => String(t.id)),
+        isActive: currentForm.isActive ?? true,
+      })
+      
+      // ✅ CAMBIO: Mapear questions del backend al formato del frontend
+      const mappedQuestions = (currentForm.questions || []).map((q: any) => ({
+        id: q.id || Date.now().toString(),
+        text: q.text || q.questionText || "", // Backend puede usar 'questionText'
+        type: q.type || q.questionType || "text", // Backend puede usar 'questionType'
+        required: q.required ?? q.isRequired ?? true, // Backend puede usar 'isRequired'
+        options: typeof q.options === 'string' ? JSON.parse(q.options || '{}') : (q.options || {}),
+      }))
+      
+      console.log('📝 Preguntas mapeadas:', mappedQuestions);
+      setQuestions(mappedQuestions)
+    }
+  }, [currentForm])
+
   useEffect(() => {
     if (isInitialized) {
       if (!isAuthenticated) {
@@ -90,19 +124,8 @@ export default function EditForm({formId}: {formId: string}) {
     }
   }, [isInitialized, isAuthenticated, user, router])
 
-  // useEffect(() => {
-  //   if (existingForm) {
-  //     setFormData({
-  //       title: existingForm.title,
-  //       description: existingForm.description,
-  //       targetTowers: existingForm.targetTowers,
-  //       isActive: existingForm.isActive,
-  //     })
-  //     setQuestions(existingForm.questions)
-  //   }
-  // }, [existingForm])
-
-  if (!isInitialized || !user || !existingForm) {
+  // ✅ Mostrar loading mientras carga
+  if (!isInitialized || isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -113,12 +136,26 @@ export default function EditForm({formId}: {formId: string}) {
     )
   }
 
-  const handleTowerToggle = (tower: string) => {
+  // ✅ Verificar si el formulario existe después de cargar
+  if (!currentForm) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Formulario no encontrado</p>
+          <Link href="/forms">
+            <Button className="mt-4">Volver a formularios</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const handleTowerToggle = (towerId: string) => { // ✅ Cambiar a string
     setFormData((prev) => ({
       ...prev,
-      targetTowers: prev.targetTowers.includes(tower)
-        ? prev.targetTowers.filter((t) => t !== tower)
-        : [...prev.targetTowers, tower],
+      targetTowers: prev.targetTowers.includes(towerId)
+        ? prev.targetTowers.filter((id) => id !== towerId)
+        : [...prev.targetTowers, towerId],
     }))
   }
 
@@ -151,7 +188,18 @@ export default function EditForm({formId}: {formId: string}) {
     setQuestions((prev) => prev.filter((q) => q.id !== id))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Mapea tus preguntas al formato del backend
+  function mapQuestions(questions: FormQuestion[]) {
+    return questions.map((q, idx) => ({
+      questionText: q.text,
+      questionType: q.type,
+      isRequired: q.required,
+      position: idx + 1,
+      options: JSON.stringify(q.options || {}), // <-- Convertir a string JSON
+    }));
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!formData.title.trim() || !formData.description.trim()) {
@@ -169,12 +217,20 @@ export default function EditForm({formId}: {formId: string}) {
       return
     }
 
-    updateForm(formId, {
-      ...formData,
-      questions,
-    })
-
-    router.push("/forms")
+    try {
+      await updateForm(formId, {
+        title: formData.title,
+        description: formData.description,
+        isActive: formData.isActive,
+        towerIds: formData.targetTowers.map(id => Number(id)), // ✅ Convert to numbers
+        questions: mapQuestions(questions),
+      })
+      
+      router.push("/forms")
+    } catch (error) {
+      console.error('Error al actualizar:', error);
+      alert("Error al actualizar el formulario")
+    }
   }
 
   const renderQuestionPreview = (question: FormQuestion) => {
@@ -280,23 +336,25 @@ export default function EditForm({formId}: {formId: string}) {
 
               <div className="space-y-3">
                 <Label className="text-lg font-medium text-gray-700">Torres Objetivo</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  {TOWERS.map((tower, index) => {
-                    const colors = ["bg-blue-500", "bg-green-500", "bg-orange-500", "bg-gray-500"]
+                <div className={`grid gap-4 ${towers.filter(t => t && t.name).length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                  {towers.filter(t => t && t.name).map((tower, index) => {
+                    const isSelected = formData.targetTowers.includes(String(tower.id));
                     return (
                       <div
-                        key={tower}
-                        className={`p-4 rounded-xl ${colors[index]} text-white shadow-lg hover:shadow-xl transition-all cursor-pointer ${formData.targetTowers.includes(tower) ? "ring-4 ring-white ring-opacity-50" : ""}`}
+                        key={tower.id}
+                        className={`p-4 rounded-xl ${TOWER_COLORS[index % TOWER_COLORS.length]} text-white shadow-lg hover:shadow-xl transition-all cursor-pointer ${
+                          isSelected ? "ring-4 ring-white ring-opacity-50" : ""
+                        }`}
                       >
                         <div className="flex items-center space-x-3">
                           <Checkbox
-                            id={tower}
-                            checked={formData.targetTowers.includes(tower)}
-                            onCheckedChange={() => handleTowerToggle(tower)}
+                            id={`tower-${tower.id}`}
+                            checked={isSelected}
+                            onCheckedChange={() => handleTowerToggle(String(tower.id))}
                             className="border-white data-[state=checked]:bg-white data-[state=checked]:text-gray-900"
                           />
-                          <Label htmlFor={tower} className="font-medium cursor-pointer">
-                            {tower}
+                          <Label htmlFor={`tower-${tower.id}`} className="font-medium cursor-pointer">
+                            {tower.name}
                           </Label>
                         </div>
                       </div>
@@ -305,11 +363,14 @@ export default function EditForm({formId}: {formId: string}) {
                 </div>
                 {formData.targetTowers.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {formData.targetTowers.map((tower) => (
-                      <Badge key={tower} className="bg-blue-500 text-white px-3 py-1">
-                        {tower}
-                      </Badge>
-                    ))}
+                    {formData.targetTowers.map((towerId) => {
+                      const tower = towers.find(t => t.id === towerId)
+                      return tower ? (
+                        <Badge key={towerId} className="bg-blue-500 text-white px-3 py-1">
+                          {tower.name}
+                        </Badge>
+                      ) : null
+                    })}
                   </div>
                 )}
               </div>
@@ -353,7 +414,7 @@ export default function EditForm({formId}: {formId: string}) {
 
               <div className="space-y-4">
                 <Label className="text-lg font-medium text-gray-700">Tipo de Pregunta</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {QUESTION_TYPES.map((type) => {
                     const Icon = type.icon
                     const isSelected = currentQuestion.type === type.value

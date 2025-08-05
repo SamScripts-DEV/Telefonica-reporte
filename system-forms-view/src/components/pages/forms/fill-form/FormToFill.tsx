@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
+import { useAuth } from "@/providers/AuthProvider"
 import { useFormStore } from "@/stores/form-store"
 import { useTowersStore } from "@/stores/towers-store" // ✅ AGREGAR esta importación
 import { Button } from "@/components/ui/button"
@@ -15,11 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StarRating } from "@/components/ui/star-rating"
 import { CheckCircle, ArrowLeft, UserRound } from "lucide-react"
 import Link from "next/link"
+import { getClientFormColors } from "@/constants/colors"
 
 export default function FormToFill({formId}: {formId: string}) {
-  const { user, isAuthenticated, checkAuth, isInitialized } = useAuthStore()
-  // ✅ CAMBIO: Agregar submitForm del store
-  const { currentForm, getFormById, submitForm, isLoading } = useFormStore()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const { currentForm, getFormById, submitForm, isLoading: formLoading } = useFormStore()
   const { towers } = useTowersStore()
   const router = useRouter()
   const params = useParams()
@@ -36,22 +35,8 @@ export default function FormToFill({formId}: {formId: string}) {
     }
   }, [formId, getFormById])
 
-  useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
-
-  useEffect(() => {
-    if (isInitialized) {
-      if (!isAuthenticated) {
-        router.push("/login")
-      } else if (user && user.role !== "client") {
-        router.push("/dashboard")
-      }
-    }
-  }, [isInitialized, isAuthenticated, user, router])
-
   // ✅ CAMBIO: Usar currentForm del store y verificar loading
-  if (!isInitialized || !user || isLoading || !currentForm) {
+  if (isLoading || formLoading || !currentForm) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -60,6 +45,16 @@ export default function FormToFill({formId}: {formId: string}) {
         </div>
       </div>
     )
+  }
+
+  // ✅ AGREGAR ESTA VERIFICACIÓN:
+  if (!isAuthenticated || !user) {
+    return null; // El AuthProvider se encarga de redirigir
+  }
+
+  if (user.role !== "client") {
+    router.push("/dashboard")
+    return null
   }
 
   // ✅ CAMBIO: Obtener técnicos desde la torre del usuario (como en Dashboard)
@@ -247,8 +242,8 @@ export default function FormToFill({formId}: {formId: string}) {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-3xl mx-auto p-6">
-        {/* Header con gradiente coherente */}
-        <div className="relative mb-8 p-6 rounded-2xl bg-green-700 text-white shadow-xl">
+        {/* ✅ CAMBIO: Header con colores más suaves */}
+        <div className="relative mb-8 p-6 rounded-2xl bg-gradient-to-br from-green-700 to-blue-700 text-white shadow-xl">
           <div className="absolute inset-0 bg-black/10 rounded-2xl"></div>
           <div className="relative">
             <div className="flex items-center gap-4 mb-4">
@@ -268,23 +263,28 @@ export default function FormToFill({formId}: {formId: string}) {
                 <UserRound className="h-6 w-6" />
               </div>
               <div>
-                {/* ✅ CAMBIO: Usar currentForm */}
                 <h1 className="text-2xl font-bold">{currentForm.title}</h1>
-                <p className="text-green-100 mt-1">{currentForm.description}</p>
+                <CardDescription className="text-blue-100">
+                  <div className="whitespace-pre-line">
+                    {currentForm.description}
+                  </div>
+                </CardDescription>
               </div>
             </div>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Selección de técnico */}
-          <Card className="border-0 shadow-xl bg-white">
-            <CardHeader className="bg-blue-700 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <UserRound className="h-6 w-6" />
+          {/* ✅ CAMBIO: Selección de técnico con colores suaves */}
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader className="bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <UserRound className="h-5 w-5" />
                 Seleccionar Técnico
               </CardTitle>
-              <CardDescription className="text-blue-100">Elige el técnico que vas a evaluar</CardDescription>
+              <CardDescription className="text-slate-200 text-sm">
+                Elige el técnico que vas a evaluar
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <Select value={selectedTechnician} onValueChange={setSelectedTechnician}>
@@ -302,26 +302,50 @@ export default function FormToFill({formId}: {formId: string}) {
             </CardContent>
           </Card>
 
-          {/* ✅ CAMBIO: Usar currentForm.questions y ajustar estructura */}
-          {currentForm.questions?.map((question: any, index: number) => (
-            <Card key={question.id} className="border-0 shadow-lg bg-white">
-              <CardHeader className="bg-green-700 text-white rounded-t-lg">
-                <CardTitle className="text-lg">
-                  Pregunta {index + 1}
-                  {question.isRequired && <span className="text-red-300 ml-1">*</span>}
-                </CardTitle>
-                <CardDescription className="text-green-100">{question.questionText}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">{renderQuestion(question)}</CardContent>
-            </Card>
-          ))}
+          {/* ✅ CAMBIO: Preguntas con colores dinámicos y mejor estructura */}
+          {currentForm.questions?.map((question: any, index: number) => {
+            const formColors = getClientFormColors(index);
+            
+            return (
+              <Card 
+                key={question.id} 
+                className="border-0 shadow-lg overflow-hidden"
+                style={{ backgroundColor: formColors.background }}
+              >
+                <CardHeader 
+                  className="text-white rounded-t-lg"
+                  style={{ backgroundColor: formColors.border }}
+                >
+                  {/* ✅ MEJOR JERARQUÍA: Pregunta principal grande */}
+                  <CardTitle className="text-lg font-semibold leading-relaxed">
+                    <div className="whitespace-pre-line">
+                      {question.questionText}
+                      {/* ✅ CAMBIO: Mover el asterisco aquí dentro */}
+                      {question.isRequired && <span className="text-red-200 ml-1">*</span>}
+                    </div>
+                    {/* ❌ QUITAR: */}
+                    {/* {question.isRequired && <span className="text-red-200 ml-1">*</span>} */}
+                  </CardTitle>
+                  
+                  {/* ✅ DISCRETO: Número pequeño */}
+                  <CardDescription className="text-white/70 text-sm">
+                    Pregunta {index + 1}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 bg-white">
+                  {renderQuestion(question)}
+                </CardContent>
+              </Card>
+            );
+          })}
 
-          {/* Botón de envío */}
-          <div className="flex justify-end gap-4 pt-6">
+          {/* ✅ CAMBIO: Botones con mejor espaciado */}
+          <div className="flex justify-end gap-4 pt-8">
             <Link href="/dashboard">
               <Button
                 type="button"
                 variant="outline"
+                size="lg"
                 className="h-12 px-8 text-lg bg-white hover:bg-gray-50 border-2 border-gray-300 text-gray-700"
               >
                 Cancelar
@@ -330,7 +354,7 @@ export default function FormToFill({formId}: {formId: string}) {
             <Button
               type="submit"
               size="lg"
-              className="h-12 px-8 text-lg bg-green-700 hover:bg-green-800 shadow-lg text-white"
+              className="h-12 px-8 text-lg bg-blue-600 hover:bg-blue-700 shadow-lg text-white"
             >
               Enviar Evaluación
             </Button>
