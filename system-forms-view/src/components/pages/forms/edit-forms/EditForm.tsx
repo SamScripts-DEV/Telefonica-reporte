@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
+import { useAuth } from "@/providers/AuthProvider"
 import { useFormStore, type FormQuestion } from "@/stores/form-store"
 import { useTowersStore } from "@/stores/towers-store" // ✅ Importar el store de torres
 import { TOWER_COLORS } from "@/constants/colors"
@@ -49,8 +48,8 @@ const STAR_DESCRIPTIONS = [
 ]
 
 export default function EditForm({formId}: {formId: string}) {
-  const { user, isAuthenticated, checkAuth, isInitialized } = useAuthStore()
-  const { currentForm, getFormById, updateForm, isLoading } = useFormStore()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const { currentForm, getFormById, updateForm, isLoading: formLoading } = useFormStore()
   const { towers, fetchTowers } = useTowersStore() // ✅ Usar el store de torres
   const router = useRouter()
   const params = useParams()
@@ -70,10 +69,6 @@ export default function EditForm({formId}: {formId: string}) {
     required: true,
     options: {},
   })
-
-  useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
 
   // ✅ CARGAR el formulario cuando se monta el componente
   useEffect(() => {
@@ -114,18 +109,18 @@ export default function EditForm({formId}: {formId: string}) {
     }
   }, [currentForm])
 
+  // ✅ AGREGAR ESTE useEffect:
   useEffect(() => {
-    if (isInitialized) {
-      if (!isAuthenticated) {
-        router.push("/login")
-      } else if (user && user.role !== "superadmin") {
-        router.push("/dashboard")
+    if (isAuthenticated && user) {
+      fetchTowers()
+      if (formId) {
+        getFormById(formId)
       }
     }
-  }, [isInitialized, isAuthenticated, user, router])
+  }, [isAuthenticated, user, formId, getFormById, fetchTowers])
 
   // ✅ Mostrar loading mientras carga
-  if (!isInitialized || isLoading) {
+  if (isLoading || formLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -134,6 +129,17 @@ export default function EditForm({formId}: {formId: string}) {
         </div>
       </div>
     )
+  }
+
+  // ✅ AGREGAR VERIFICACIÓN DE AUTENTICACIÓN:
+  if (!isAuthenticated || !user) {
+    return null; // El AuthProvider se encarga de redirigir
+  }
+
+  // ✅ VERIFICAR ROL:
+  if (user.role !== "superadmin") {
+    router.push("/dashboard")
+    return null
   }
 
   // ✅ Verificar si el formulario existe después de cargar

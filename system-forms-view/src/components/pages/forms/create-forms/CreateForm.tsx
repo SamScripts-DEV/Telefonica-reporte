@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
+import { useAuth } from "@/providers/AuthProvider"
 import { FormQuestion, useFormStore } from "@/stores/form-store"
+import { useTowersStore } from "@/stores/towers-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +15,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { StarRating } from "@/components/ui/star-rating"
 import { formsApi } from '@/api/forms/forms-endpoints'
-import { useTowersStore } from "@/stores/towers-store"
 import { getTowerColor } from "@/constants/colors" // ✅ Importar función helper
 
 import { Plus, Trash2, Save, ArrowLeft, Star, MessageSquare, Hash, Building2, Sparkles } from "lucide-react"
@@ -54,10 +53,10 @@ const STAR_DESCRIPTIONS = [
 ]
 
 export default function CreateForm() {
-  const { user, isAuthenticated, checkAuth, isInitialized } = useAuthStore()
-  const { createForm, isLoading } = useFormStore() // ✅ Usar createForm del store
-  const router = useRouter()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const { createForm, isLoading: formLoading } = useFormStore()
   const { towers, fetchTowers, isLoading: towersLoading } = useTowersStore()
+  const router = useRouter()
 
   const [formData, setFormData] = useState({
     title: "",
@@ -75,24 +74,12 @@ export default function CreateForm() {
   })
 
   useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
-
-  useEffect(() => {
-    if (isInitialized) {
-      if (!isAuthenticated) {
-        router.push("/login")
-      } else if (user && user.role !== "superadmin") {
-        router.push("/dashboard")
-      }
+    if (isAuthenticated && user) {
+      fetchTowers()
     }
-  }, [isInitialized, isAuthenticated, user, router])
+  }, [isAuthenticated, user, fetchTowers])
 
-  useEffect(() => {
-    fetchTowers();
-  }, [fetchTowers]);
-
-  if (!isInitialized || !user) {
+  if (isLoading || towersLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -103,12 +90,21 @@ export default function CreateForm() {
     )
   }
 
-  const handleTowerToggle = (tower: string) => {
+  if (!isAuthenticated || !user) {
+    return null; // El AuthProvider se encarga de redirigir
+  }
+
+  if (user.role !== "superadmin") {
+    router.push("/dashboard")
+    return null
+  }
+
+  const handleTowerToggle = (towerId: string) => {
     setFormData((prev) => ({
       ...prev,
-      targetTowers: prev.targetTowers.includes(tower)
-        ? prev.targetTowers.filter((t) => t !== tower)
-        : [...prev.targetTowers, tower],
+      targetTowers: prev.targetTowers.includes(towerId)
+        ? prev.targetTowers.filter((t) => t !== towerId)
+        : [...prev.targetTowers, towerId],
     }))
   }
 
@@ -144,6 +140,8 @@ export default function CreateForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (formLoading) return // Prevenir múltiples envíos
 
     if (!formData.title.trim() || !formData.description.trim()) {
       alert("Por favor completa el título y descripción")
@@ -185,7 +183,7 @@ export default function CreateForm() {
 
       // ✅ Usar el store en lugar de llamar directamente a la API
       await createForm(backendFormData)
-
+      
       alert('Formulario creado exitosamente!')
       router.push("/forms")
     } catch (error: any) {
@@ -495,10 +493,11 @@ export default function CreateForm() {
             </Link>
             <Button
               type="submit"
-              className="h-12 px-8 text-lg bg-blue-700 hover:bg-blue-800 shadow-lg hover:shadow-xl transition-all text-white"
+              disabled={formLoading}
+              className="h-12 px-8 text-lg bg-blue-700 hover:bg-blue-800 shadow-lg hover:shadow-xl transition-all text-white disabled:opacity-50"
             >
               <Save className="mr-2 h-5 w-5" />
-              Crear Formulario
+              {formLoading ? 'Creando...' : 'Crear Formulario'}
             </Button>
           </div>
         </form>

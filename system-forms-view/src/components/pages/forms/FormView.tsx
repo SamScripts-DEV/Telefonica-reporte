@@ -2,7 +2,10 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
+// ❌ CAMBIAR ESTA LÍNEA:
+// import { useAuthStore } from "@/stores/auth-store"
+// ✅ POR ESTA:
+import { useAuth } from "@/providers/AuthProvider"
 import { useFormStore } from "@/stores/form-store"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,53 +17,63 @@ import { getTowerColor, getFormHeaderColor } from "@/constants/colors" // ✅ Im
 import { useTowersStore } from "@/stores/towers-store"
 
 export default function FormsView() {
-  const { user, isAuthenticated, checkAuth, isInitialized } = useAuthStore()
-  const { forms, getForms, deleteForm, isLoading, error } = useFormStore()
-  const { towers, fetchTowers } = useTowersStore() // ✅ Importar towers del store
+  // ❌ CAMBIAR ESTA LÍNEA:
+  // const { user, isAuthenticated, checkAuth, isInitialized } = useAuthStore()
+  // ✅ POR ESTA:
+  const { user, isAuthenticated, isLoading } = useAuth()
+  
+  const { forms, getForms, deleteForm, isLoading: formsLoading, error } = useFormStore()
+  const { towers, fetchTowers } = useTowersStore()
   const router = useRouter()
 
-  useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
+  // ❌ ELIMINAR ESTOS useEffect:
+  // useEffect(() => {
+  //   checkAuth()
+  // }, [checkAuth])
 
-  useEffect(() => {
-    if (isInitialized) {
-      if (!isAuthenticated) {
-        router.push("/login")
-      } else if (user && user.role !== "superadmin") {
-        router.push("/dashboard")
-      }
-    }
-  }, [isInitialized, isAuthenticated, user, router])
+  // useEffect(() => {
+  //   if (isInitialized) {
+  //     if (!isAuthenticated) {
+  //       router.push("/login")
+  //     } else if (user && user.role !== "superadmin") {
+  //       router.push("/dashboard")
+  //     }
+  //   }
+  // }, [isInitialized, isAuthenticated, user, router])
 
-  // ✅ Cargar formularios usando el store
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      getForms() // ✅ Usar la función del store
-    }
-  }, [isAuthenticated, user, getForms])
-
-  // ✅ Cargar torres también
+  // ✅ AGREGAR ESTE useEffect:
   useEffect(() => {
     if (isAuthenticated && user) {
       getForms()
-      fetchTowers() // ✅ Cargar torres para obtener el índice correcto
+      fetchTowers()
     }
   }, [isAuthenticated, user, getForms, fetchTowers])
 
-  if (!isInitialized || !user) {
+  // ✅ CAMBIAR LAS CONDICIONES DE LOADING:
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando formularios...</p>
+          <p className="text-gray-600">Cargando...</p>
         </div>
       </div>
     )
   }
 
-  // ✅ Mostrar loading del store
-  if (isLoading) {
+  // ✅ AGREGAR VERIFICACIÓN DE AUTENTICACIÓN:
+  if (!isAuthenticated || !user) {
+    return null; // El AuthProvider se encarga de redirigir
+  }
+
+  // ✅ VERIFICAR ROL:
+  if (user.role !== "superadmin") {
+    router.push("/dashboard")
+    return null
+  }
+
+  // ✅ CAMBIAR CONDICIÓN DE LOADING DE FORMULARIOS:
+  if (formsLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">

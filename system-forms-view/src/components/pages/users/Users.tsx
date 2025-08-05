@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
+import { useAuth } from "@/providers/AuthProvider"
 import { useUserStore } from "@/stores/user-store"
 import { useTowersStore } from "@/stores/towers-store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,9 +32,9 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function UserManagement() {
     const router = useRouter()
-    const { user, isAuthenticated, isInitialized, checkAuth } = useAuthStore()
+    const { user, isAuthenticated, isLoading } = useAuth()
     const { towers, fetchTowers } = useTowersStore()
-    const { createUser, createTechnician, isLoading, error, users, getUsers, technicians, getTechnicians } = useUserStore()
+    const { createUser, createTechnician, isLoading: userLoading, error, users, getUsers, technicians, getTechnicians } = useUserStore()
 
     const [form, setForm] = useState<Partial<CreateSystemUserDto & CreateTechnicianDto>>({
         name: "",
@@ -52,21 +52,12 @@ export default function UserManagement() {
     const [success, setSuccess] = useState<boolean>(false)
 
     useEffect(() => {
-        checkAuth()
-        fetchTowers()
-        getUsers()
-        getTechnicians()
-    }, [checkAuth, fetchTowers, getUsers, getTechnicians])
-
-    useEffect(() => {
-        if (isInitialized) {
-            if (!isAuthenticated) {
-                router.push("/login")
-            } else if (user?.role !== "superadmin") {
-                router.push("/dashboard")
-            }
+        if (isAuthenticated && user) {
+            fetchTowers()
+            getUsers()
+            getTechnicians()
         }
-    }, [isInitialized, isAuthenticated, user, router])
+    }, [isAuthenticated, user, fetchTowers, getUsers, getTechnicians])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target
@@ -134,7 +125,7 @@ export default function UserManagement() {
         }
     }
 
-    if (!isInitialized || !user) {
+    if (isLoading || userLoading) {
         return (
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
                 <div className="text-center">
@@ -143,6 +134,15 @@ export default function UserManagement() {
                 </div>
             </div>
         )
+    }
+
+    if (!isAuthenticated || !user) {
+        return null; // El AuthProvider se encarga de redirigir
+    }
+
+    if (user.role !== "superadmin") {
+        router.push("/dashboard")
+        return null
     }
 
     return (
@@ -312,9 +312,9 @@ export default function UserManagement() {
                                 <Button
                                     type="submit"
                                     className="w-full bg-teal-700 hover:bg-blue-800 text-white"
-                                    disabled={isLoading}
+                                    disabled={userLoading}
                                 >
-                                    {isLoading ? (
+                                    {userLoading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                             Creando...

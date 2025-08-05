@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
+import { useAuth } from "@/providers/AuthProvider"
 import { useFormStore } from "@/stores/form-store"
 
 import { Button } from "@/components/ui/button"
@@ -15,33 +15,19 @@ import { ArrowLeft, Edit, Star, MessageSquare, Hash, Building2, Calendar, Users 
 import Link from "next/link"
 
 export default function DetailForm({formId}: {formId: string}) {
-  const { user, isAuthenticated, checkAuth, isInitialized } = useAuthStore()
-  const { currentForm, getFormById, isLoading, error } = useFormStore()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const { currentForm, getFormById, isLoading: formLoading, error } = useFormStore()
   const router = useRouter()
   const params = useParams()
 
 
   useEffect(() => {
-    if (formId) {
+    if (isAuthenticated && user && formId) {
       getFormById(formId)
     }
-  }, [formId, getFormById])
+  }, [isAuthenticated, user, formId, getFormById])
 
-  useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
-
-  useEffect(() => {
-    if (isInitialized) {
-      if (!isAuthenticated) {
-        router.push("/login")
-      } else if (user && user.role !== "superadmin") {
-        router.push("/dashboard")
-      }
-    }
-  }, [isInitialized, isAuthenticated, user, router])
-
-  if (!isInitialized || !user || isLoading || !currentForm) {
+  if (isLoading || formLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -52,11 +38,33 @@ export default function DetailForm({formId}: {formId: string}) {
     )
   }
 
+  if (!isAuthenticated || !user) {
+    return null; // El AuthProvider se encarga de redirigir
+  }
+
+  if (user.role !== "superadmin") {
+    router.push("/dashboard")
+    return null
+  }
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
+          <Link href="/forms">
+            <Button variant="outline">Volver a Formularios</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentForm) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Formulario no encontrado</p>
           <Link href="/forms">
             <Button variant="outline">Volver a Formularios</Button>
           </Link>
@@ -161,7 +169,9 @@ export default function DetailForm({formId}: {formId: string}) {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">{form.title}</h1>
-                <p className="text-blue-100 mt-1">{form.description}</p>
+                <div className="text-blue-100 mt-1 whitespace-pre-line">
+                  {form.description}
+                </div>
               </div>
             </div>
           </div>
