@@ -31,7 +31,7 @@ export class TowersController {
   }
 
   @Get()
-  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador')
+  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
   findAll(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
     return this.towersService.findAll(paginationDto, user);
   }

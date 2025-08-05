@@ -26,20 +26,26 @@ import { FormStatus } from '../../entities/form.entity';
 export class FormsController {
   constructor(private readonly formsService: FormsService) {}
 
-  @Post()
+  @Post('create')
   @Roles('dev', 'superadmin', 'pm', 'jefe')
   create(@Body() createFormDto: CreateFormDto, @GetUser() user: RequestUser) {
     return this.formsService.create(createFormDto, user);
   }
 
+  @Get('pending')
+  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
+  getPendingForms(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
+    return this.formsService.getPendingFormsForUser(paginationDto, user);
+  }
+
   @Get()
-  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador')
+  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
   findAll(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
     return this.formsService.findAll(paginationDto, user);
   }
 
   @Get(':id')
-  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador')
+  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
   findOne(@Param('id') id: string, @GetUser() user: RequestUser) {
     return this.formsService.findOne(id, user);
   }
@@ -57,13 +63,13 @@ export class FormsController {
   }
 
   @Post(':id/submit')
-  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador')
+  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
   submitForm(@Param('id') id: string, @Body() submitFormDto: SubmitFormDto, @GetUser() user: RequestUser) {
     return this.formsService.submitForm(id, submitFormDto, user);
   }
 
   @Get(':id/responses')
-  @Roles('dev', 'superadmin', 'pm', 'jefe')
+  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
   getFormResponses(@Param('id') id: string, @Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
     return this.formsService.getFormResponses(id, user, paginationDto);
   }

@@ -299,4 +299,46 @@ export class FormsService {
     await this.formRepository.update(formId, { status });
     return this.findOne(formId, user);
   }
+
+  async getPendingFormsForUser(paginationDto: PaginationDto, user: RequestUser): Promise<PaginatedResult<Form>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.formRepository
+      .createQueryBuilder('form')
+      .leftJoinAndSelect('form.creator', 'creator')
+      .leftJoinAndSelect('form.technician', 'technician')
+      .leftJoinAndSelect('form.towers', 'towers')
+      .leftJoinAndSelect('form.questions', 'questions')
+      .leftJoin('form.responses', 'responses', 'responses.userId = :userId', { userId: user.id })
+      .where('form.status = :status', { status: FormStatus.ACTIVE })
+      .andWhere('responses.id IS NULL'); // Solo formularios sin respuesta del usuario
+
+    // Filtrar por torres del usuario si no es dev/superadmin
+    if (!['dev', 'superadmin'].includes(user.roleName)) {
+      if (user.towerIds && user.towerIds.length > 0) {
+        queryBuilder
+          .innerJoin('form.towers', 'userTowers')
+          .andWhere('userTowers.id IN (:...towerIds)', { towerIds: user.towerIds });
+      } else {
+        queryBuilder.andWhere('1 = 0'); // Sin acceso si no tiene torres asignadas
+      }
+    }
+
+    const [forms, total] = await queryBuilder
+      .orderBy('form.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data: forms,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 }
