@@ -1,34 +1,22 @@
-# Use Node.js official image
-FROM node:18-alpine
+# Construcción y producción: usar una imagen con herramientas de build
+FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copiar package.json
 COPY package*.json ./
 
-# Install all dependencies (including devDependencies for build)
-RUN npm ci
+# Instalar TODO (incluyendo devDependencies para poder hacer build)
+RUN npm install
 
-# Copy source code
+# Copiar código
 COPY . .
 
-# Build the application
+# Hacer build
 RUN npm run build
 
-# Remove dev dependencies after build
-RUN npm prune --production
-
-# Expose port
+# Exponer puerto
 EXPOSE 3000
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
-
-# Change ownership of the app directory
-RUN chown -R nestjs:nodejs /app
-USER nestjs
-
-# Start the application
+# Ejecutar
 CMD ["node", "dist/main"]

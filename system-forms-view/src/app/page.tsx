@@ -1,13 +1,7 @@
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+"use client"
+
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace('/auth/login');
-  }, [router]);
-
-  return null;
+  redirect('/auth/login');
 }

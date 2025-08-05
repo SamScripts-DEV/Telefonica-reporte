@@ -37,7 +37,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3000:3000"
+      - "9002:3000"
     networks:
       - encuestas_net
     depends_on:
@@ -52,7 +52,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3001:3000"
+      - "9000:3000"
     networks:
       - encuestas_net
     depends_on:
@@ -60,7 +60,9 @@ services:
 
 volumes:
   pgdata:
+    driver: local
   pgadmin_data:
+    driver: local
 
 networks:
   encuestas_net:
