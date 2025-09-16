@@ -5,6 +5,7 @@ import { LoginDto } from './dto/login.dto';
 import { Response } from 'express';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { RequestUser } from 'src/common/interfaces/auth.interface';
+import { access } from 'fs';
 
 @Controller('auth')
 export class AuthController {
@@ -21,7 +22,10 @@ export class AuthController {
       maxAge: 24 * 60 * 60 * 1000, // 1 día
     });
 
-    res.json({ user: result.user });
+    res.json({ 
+      user: result.user,
+      access_token: result.access_token, 
+    });
   }
 
   @Get('check')

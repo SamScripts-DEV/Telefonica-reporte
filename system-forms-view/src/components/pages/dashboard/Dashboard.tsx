@@ -1,12 +1,14 @@
 "use client"
 
+//Este pronto en desuso no lo usa nadie aun
+
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/providers/AuthProvider" // ✅ Usar el hook del provider
+import { useAuth } from "@/providers/AuthProvider" 
 import { useFormStore } from "@/stores/form-store"
-import { useTowersStore } from "@/stores/towers-store" // ✅ Agregar importación
+import { useTowersStore } from "@/stores/towers-store" 
 import { getTowerColor, getClientFormColors } from "@/constants/colors"
-import { Tower } from "@/types/towers-types" // o donde tengas definido Tower
+
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -20,16 +22,16 @@ export default function Dashboard() {
   const { forms, getForms, isLoading: formsLoading, error, pendingForms } = useFormStore()
   const { towers, fetchTowers } = useTowersStore()
 
-  // ✅ AGREGAR ESTE useEffect:
+  
   useEffect(() => {
     if (isAuthenticated && user) {
-      console.log('🚀 Cargando formularios y torres...');
+      console.log('Cargando formularios y torres...');
       getForms()
       fetchTowers()
     }
   }, [isAuthenticated, user, getForms, fetchTowers])
 
-  // ✅ Esperar a que termine de cargar la autenticación
+  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -41,25 +43,23 @@ export default function Dashboard() {
     )
   }
 
-  // ✅ Si no está autenticado, redirigir (esto lo maneja el AuthProvider)
   if (!isAuthenticated || !user) {
-    return null; // El AuthProvider se encarga de redirigir
+    return null; 
   }
 
   // Vista para clientes - actualizar la lógica
   if (user.role === "client") {
     const userTowerId = user.towers?.[0]?.id;
 
-    // ✅ OPCIONAL: Solo si quieres mostrar el nombre de la torre
+    
     const userTower = towers.find(tower => Number(tower.id) === Number(userTowerId));
 
-    // ✅ CAMBIO: Filtrar formularios del array global por la torre del usuario
+   
     const clientForms = forms.filter(form =>
       form.towers?.some(tower => Number(tower.id) === Number(userTowerId))
     );
 
-    // ❌ ELIMINAR ESTA CONDICIÓN:
-    // if (towers.length === 0) { return loading... }
+    
 
     console.log('userTowerId:', userTowerId);
     console.log('clientForms:', clientForms);

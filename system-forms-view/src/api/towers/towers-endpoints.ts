@@ -2,8 +2,6 @@ import api from "../utils";
 import { api_endpoints } from "../../constants/api-endpoints";
 import { Tower } from "@/types/towers-types";
 
-
-
 export const towersApi = {
   getTowers: async (): Promise<Tower[]> => {
     try {

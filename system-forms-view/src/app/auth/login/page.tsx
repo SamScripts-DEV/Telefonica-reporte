@@ -1,5 +1,5 @@
 import LoginPage from "@/components/pages/auth/Login";
-import { title } from "process";
+
 
 export const metadata = {
     title: "Login",

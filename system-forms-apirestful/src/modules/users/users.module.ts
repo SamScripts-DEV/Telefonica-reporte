@@ -6,9 +6,10 @@ import { User } from '../../entities/user.entity';
 import { Tower } from '../../entities/tower.entity';
 import { Role } from '../../entities/role.entity';
 import { Group } from '../../entities/group.entity';
+import { Technician } from 'src/entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Tower, Role, Group])],
+  imports: [TypeOrmModule.forFeature([User, Tower, Role, Group, Technician])],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

@@ -1,6 +1,6 @@
-import { IsString, IsOptional, IsBoolean, IsEnum, IsArray, ValidateNested, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsEnum, IsArray, ValidateNested, IsNumber, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
-import { FormStatus } from '../../../entities/form.entity';
+import { FormStatus, FormType } from '../../../entities/form.entity';
 import { QuestionType } from '../../../entities/question.entity';
 
 export class CreateQuestionDto {
@@ -31,12 +31,33 @@ export class CreateFormDto {
   description?: string;
 
   @IsOptional()
+  @IsEnum(FormType)
+  type?: FormType;
+
+  @IsOptional()
   @IsEnum(FormStatus)
   status?: FormStatus;
 
   @IsOptional()
   @IsBoolean()
   isAnonymous?: boolean;
+
+  // ⭐ CAMPOS PARA FORMULARIOS PERIÓDICOS
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(31)
+  startDay?: number; // Día que se abre (ej: 27)
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(31)
+  endDay?: number; // Día que se cierra (ej: 5)
+
+  @IsOptional()
+  @IsBoolean()
+  autoActivate?: boolean; // Se activa automáticamente
 
   @IsOptional()
   @IsString()

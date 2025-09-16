@@ -59,9 +59,13 @@ interface UserState {
   createTechnician: (data: any) => Promise<any>
   getUsers: () => Promise<void>
   getTechnicians: () => Promise<void>
+  updateUser: (id: string, updatedData: Partial<User>) => Promise<any>
+  updateTechnician: (id: string, updatedData: Partial<Technician>) => Promise<any>
+  deleteUser: (id: string) => Promise<any>
+  deleteTechnician: (id: string) => Promise<any>
 }
 
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState>((set, get) => ({
   users: [],
   technicians: [],
   isLoading: false,
@@ -106,4 +110,67 @@ export const useUserStore = create<UserState>((set) => ({
       set({ error: error.message || "Error al obtener técnicos", isLoading: false })
     }
   },
+
+  updateUser: async (id, updatedData) => {
+    set({ isLoading: true, error: null })
+    try {
+      const user = await usersApi.updateUser(id, updatedData)
+      // Actualiza el usuario en el estado local
+      set((state) => ({
+        users: state.users.map(u => u.id === id ? { ...u, ...user } : u),
+        isLoading: false
+      }))
+      return user
+    } catch (error: any) {
+      set({ error: error.message || "Error al actualizar usuario", isLoading: false })
+      throw error
+    }
+  },
+
+  updateTechnician: async (id, updatedData) => {
+    set({ isLoading: true, error: null })
+    try {
+      const technician = await usersApi.updateTechnician(id, updatedData)
+      set((state) => ({
+        technicians: state.technicians.map(t => t.id === id ? { ...t, ...technician } : t),
+        isLoading: false
+      }))
+      return technician
+    } catch (error: any) {
+      set({ error: error.message || "Error al actualizar técnico", isLoading: false })
+      throw error
+    }
+  },
+
+  deleteUser: async (id) => {
+    set({ isLoading: true, error: null })
+    try {
+      // Soft delete: solo cambia el estado isActive a false
+      const user = await usersApi.deleteUser(id)
+      set((state) => ({
+        users: state.users.map(u => u.id === id ? { ...u, ...user } : u),
+        isLoading: false
+      }))
+      return user
+    } catch (error: any) {
+      set({ error: error.message || "Error al desactivar usuario", isLoading: false })
+      throw error
+    }
+  },
+
+  deleteTechnician: async (id) => {
+    set({ isLoading: true, error: null })
+    try {
+      // Soft delete: solo cambia el estado isActive a false
+      const technician = await usersApi.deleteTechnician(id)
+      set((state) => ({
+        technicians: state.technicians.map(t => t.id === id ? { ...t, ...technician } : t),
+        isLoading: false
+      }))
+      return technician
+    } catch (error: any) {
+      set({ error: error.message || "Error al desactivar técnico", isLoading: false })
+      throw error
+    }
+  }
 }))

@@ -1,12 +1,13 @@
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
   ManyToOne,
-  JoinColumn 
+  JoinColumn
 } from 'typeorm';
 import { FormResponse } from './form-response.entity';
 import { Question } from './question.entity';
+import { Technician } from './technician.entity';
 
 @Entity('question_responses')
 export class QuestionResponse {
@@ -29,4 +30,8 @@ export class QuestionResponse {
   @ManyToOne(() => Question, question => question.responses)
   @JoinColumn({ name: 'question_id' })
   question: Question;
+
+  @ManyToOne(() => Technician)
+  @JoinColumn({ name: 'technician_id' })
+  technician: Technician; // <-- relación con Technician
 }

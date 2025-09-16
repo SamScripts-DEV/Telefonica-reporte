@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 
 export function Navbar() {
   const { user, logout, isLoading } = useAuth()
-  
+
   console.log('NavBar - user:', user, 'isLoading:', isLoading) // ✅ Debug
 
   const pathname = usePathname()
@@ -30,10 +30,10 @@ export function Navbar() {
   }
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["superadmin","admin"] },
-    { href: "/forms", label: "Formularios", icon: FileText, roles: ["superadmin","admin"] },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["superadmin", "admin"] },
+    { href: "/forms", label: "Formularios", icon: FileText, roles: ["superadmin", "admin"] },
     // { href: "/reports", label: "Reportes", icon: BarChart, roles: ["superadmin","admin"] },
-    { href: "/users", label: "Usuarios", icon: Users, roles: ["superadmin","admin"] },
+    { href: "/users", label: "Usuarios", icon: Users, roles: ["superadmin", "admin"] },
   ]
 
   return (
@@ -75,11 +75,14 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center">
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8 bg-blue-100 text-blue-700">
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                <Button
+                  className="relative h-10 w-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center shadow"
+                  variant="default"
+                >
+                  <Avatar className="h-9 w-9 bg-blue-600 text-blue-600 ">
+                    <AvatarFallback className="text-lg font-bold">{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>

@@ -10,3 +10,4 @@ export * from './form-response.entity';
 export * from './question-response.entity';
 export * from './question-history.entity';
 export * from './audit-log.entity';
+export * from './evaluator_technician_map.entity';

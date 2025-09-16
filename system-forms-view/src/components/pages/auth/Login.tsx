@@ -8,18 +8,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { FileText, Loader2 } from "lucide-react"
+import { FileText, Loader2, Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
 
   const { login, isLoading } = useAuth()
   const router = useRouter()
 
-  // No mostrar nada mientras carga
-  if (isLoading) return null
+
+ 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +30,7 @@ export default function LoginPage() {
 
       const result = await login(email, password)
       console.log("Login exitoso:", result);
-      
+
       router.push("/dashboard")
     } catch (err) {
       setError("Credenciales inválidas. Intenta de nuevo.")
@@ -62,7 +63,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="tu@email.com"
+                  placeholder="nombre.apellido@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -70,18 +71,27 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label htmlFor="password">Contraseña</Label>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="h-11 border-gray-300 focus:border-blue-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-9 text-gray-500 hover:text-blue-700"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
+
 
               {error && (
                 <Alert variant="destructive">
@@ -105,20 +115,6 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">Usuarios de prueba:</p>
-              <div className="text-xs space-y-1 text-gray-700">
-                <p>
-                  <strong>Admin:</strong> admin@company.com / 123456
-                </p>
-                <p>
-                  <strong>Cliente:</strong> client@company.com / 123456
-                </p>
-                <p>
-                  <strong>Técnico:</strong> tech@company.com / 123456
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

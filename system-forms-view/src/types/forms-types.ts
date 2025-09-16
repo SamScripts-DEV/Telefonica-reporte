@@ -2,11 +2,15 @@ export interface FormCreateRequest {
   title: string
   description: string
   status: string
+  type: "single" | "periodic"
   isActive: boolean
   isAnonymous: boolean
   technicianId?: string // ✅ Mantener como opcional
   towerIds: number[]
   questions: QuestionCreateRequest[]
+  startDay?: number
+  endDay?: number
+  autoActivate?: boolean
 }
 
 export interface QuestionCreateRequest {
@@ -55,3 +59,20 @@ export interface FormSubmissionResponse {
 }
 
 
+
+
+// Puedes poner esto en src/types/forms-types.ts
+export interface BulkEvaluationAnswer {
+  questionId: string;
+  value: string | number;
+}
+
+export interface BulkEvaluationItem {
+  formId: string;
+  technicianId: string;
+  answers: BulkEvaluationAnswer[];
+}
+
+export interface BulkEvaluationRequest {
+  evaluations: BulkEvaluationItem[];
+}

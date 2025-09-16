@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       const response = await checkAuthEndpoint()
-      
+
       if (response.success && response.user) {
         setUser(response.user)
         setIsAuthenticated(true)
@@ -41,8 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Auth check failed:', error)
       setUser(null)
       setIsAuthenticated(false)
-      
-      // Solo redirigir si no estamos en una ruta pública
+
+  
       if (!PUBLIC_ROUTES.includes(pathname)) {
         router.push('/auth/login')
       }
@@ -56,10 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await loginEndpoint({ email, password })
       setUser({
-        ...response.user, // debe incluir towers
+        ...response.user, 
       })
       setIsAuthenticated(true)
-      return response // <-- retorna la respuesta
+      return response // 
     } catch (error) {
       setUser(null)
       setIsAuthenticated(false)
@@ -71,9 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await logoutEndpoint() // Llama al endpoint del backend
+      await logoutEndpoint() 
     } catch (error) {
-      // Puedes mostrar un mensaje o ignorar el error
       console.error('Logout error:', error)
     } finally {
       setUser(null)
@@ -82,30 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+ 
   // Verificar auth al montar el componente
   useEffect(() => {
+  if (!PUBLIC_ROUTES.includes(pathname) && !isAuthenticated) {
     checkAuth()
-  }, [])
+  }
+}, [pathname, isAuthenticated])
 
-  // Verificar auth cada vez que cambie la ruta
-  useEffect(() => {
-    if (!isLoading && !PUBLIC_ROUTES.includes(pathname)) {
-      if (!isAuthenticated) {
-        router.push('/auth/login')
-      }
-    }
-  }, [pathname, isAuthenticated, isLoading])
-
-  // Verificar auth periódicamente (opcional)
-  useEffect(() => {
-    if (isAuthenticated) {
-      const interval = setInterval(() => {
-        checkAuth()
-      }, 5 * 60 * 1000) // Cada 5 minutos
-
-      return () => clearInterval(interval)
-    }
-  }, [isAuthenticated])
+ 
 
   const value = {
     user,

@@ -1,7 +1,8 @@
 import React from "react";
 import Head from "next/head";
 
-import Dashboard from "@/components/pages/dashboard/Dashboard";
+//import Dashboard from "@/components/pages/dashboard/Dashboard";
+import DashboardUnion from "@/components/pages/dashboard/Dashboard.union";
 
 
 export const metadata = {
@@ -16,7 +17,7 @@ const DashboardPage = () => {
                 <title>{metadata.title}</title>
                 <meta name="description" content={metadata.description} />
             </Head>
-            <Dashboard />
+            <DashboardUnion />
         </>
     );
 

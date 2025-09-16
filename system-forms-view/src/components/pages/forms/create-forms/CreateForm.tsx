@@ -16,9 +16,13 @@ import { Badge } from "@/components/ui/badge"
 import { StarRating } from "@/components/ui/star-rating"
 import { formsApi } from '@/api/forms/forms-endpoints'
 import { getTowerColor } from "@/constants/colors" // ✅ Importar función helper
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
 
 import { Plus, Trash2, Save, ArrowLeft, Star, MessageSquare, Hash, Building2, Sparkles } from "lucide-react"
 import Link from "next/link"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const QUESTION_TYPES = [
   {
@@ -63,6 +67,11 @@ export default function CreateForm() {
     description: "",
     targetTowers: [] as string[],
     isActive: true,
+    // NUEVOS CAMPOS: tipo y fechas para periodic
+    type: "single" as "single" | "periodic",
+    startDay: undefined as number | undefined,
+    endDay: undefined as number | undefined,
+    autoActivate: false,
   })
 
   const [questions, setQuestions] = useState<FormQuestion[]>([])
@@ -159,7 +168,7 @@ export default function CreateForm() {
     }
 
     try {
-      // Transformar las preguntas al formato que espera el backend
+
       const questionsForBackend = questions.map((question, index) => ({
         questionText: question.text,
         questionType: question.type,
@@ -169,21 +178,27 @@ export default function CreateForm() {
       }))
 
       // Preparar los datos del formulario
-      const backendFormData = {
+      const backendFormData: any = {
         title: formData.title,
         description: formData.description,
-        status: "active",
-        isActive: formData.isActive,
+        type: formData.type, // single o periodic
+        status: "draft",
+        isActive: true,
         isAnonymous: false,
         towerIds: formData.targetTowers.map(id => parseInt(id)),
         questions: questionsForBackend
       }
 
+      if (formData.type === "periodic") {
+        if (formData.startDay !== undefined) backendFormData.startDay = formData.startDay
+        if (formData.endDay !== undefined) backendFormData.endDay = formData.endDay
+        backendFormData.autoActivate = !!formData.autoActivate
+      }
+
       console.log('Sending to backend:', JSON.stringify(backendFormData, null, 2))
 
-      // ✅ Usar el store en lugar de llamar directamente a la API
       await createForm(backendFormData)
-      
+
       alert('Formulario creado exitosamente!')
       router.push("/forms")
     } catch (error: any) {
@@ -293,6 +308,158 @@ export default function CreateForm() {
                 />
               </div>
 
+              {/* Selector de tipo y campos para periodic - ajustado al estilo */}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Tipo de Formulario</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value: "single" | "periodic") =>
+                      setFormData((prev) => ({ ...prev, type: value }))
+                    }
+                  >
+                    <SelectTrigger className="mt-1 h-10 border border-gray-300 focus:border-blue-500">
+                      <SelectValue placeholder="Selecciona el tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">🟢 Único</SelectItem>
+                      <SelectItem value="periodic">🔵 Periódico</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.type === "periodic" && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="mb-3">
+                      <h4 className="text-sm font-medium text-blue-800">Configuración Periódica</h4>
+                      <p className="text-xs text-blue-600 mt-1">Define cuándo se activará automáticamente cada mes</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Día inicio (1-31)</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={`mt-1 h-10 w-full justify-start text-left font-normal border border-gray-300 focus:border-blue-500 ${
+                                !formData.startDay ? "text-muted-foreground" : ""
+                              }`}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {formData.startDay ? `Día ${formData.startDay}` : "Seleccionar día"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <div className="p-4">
+                              <div className="grid grid-cols-7 gap-2">
+                                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                                  <Button
+                                    key={day}
+                                    variant={formData.startDay === day ? "default" : "outline"}
+                                    size="sm"
+                                    className={`h-8 w-8 p-0 text-xs ${
+                                      formData.startDay === day 
+                                        ? "bg-blue-500 text-white hover:bg-blue-600" 
+                                        : "hover:bg-blue-50"
+                                    }`}
+                                    onClick={() => {
+                                      setFormData((prev) => ({ ...prev, startDay: day }))
+                                    }}
+                                  >
+                                    {day}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <p className="text-xs text-gray-500 mt-1">Día del mes en que se abrirá</p>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Día fin (1-31)</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={`mt-1 h-10 w-full justify-start text-left font-normal border border-gray-300 focus:border-blue-500 ${
+                                !formData.endDay ? "text-muted-foreground" : ""
+                              }`}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {formData.endDay ? `Día ${formData.endDay}` : "Seleccionar día"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <div className="p-4">
+                              <div className="grid grid-cols-7 gap-2">
+                                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                                  <Button
+                                    key={day}
+                                    variant={formData.endDay === day ? "default" : "outline"}
+                                    size="sm"
+                                    className={`h-8 w-8 p-0 text-xs ${
+                                      formData.endDay === day 
+                                        ? "bg-blue-500 text-white hover:bg-blue-600" 
+                                        : "hover:bg-blue-50"
+                                    }`}
+                                    onClick={() => {
+                                      setFormData((prev) => ({ ...prev, endDay: day }))
+                                    }}
+                                  >
+                                    {day}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <p className="text-xs text-gray-500 mt-1">Día del mes en que se cerrará</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 p-3 bg-blue-100/50 rounded-lg border border-blue-200">
+                      <p className="text-xs text-blue-700 font-medium mb-1">💡 Información importante:</p>
+                      <p className="text-xs text-blue-600">
+                        Si el día fin es menor al día inicio, significa que el formulario se cerrará el día especificado del <strong>mes siguiente</strong>.
+                        <br />
+                        Ejemplo: Inicio día 27, Fin día 5 = del 27 de enero al 5 de febrero.
+                      </p>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-2">
+                      <Checkbox
+                        id="autoActivate"
+                        checked={formData.autoActivate}
+                        onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, autoActivate: !!checked }))
+                        }
+                      />
+                      <Label htmlFor="autoActivate" className="text-sm font-medium text-gray-700 cursor-pointer">
+                        Activación automática
+                      </Label>
+                    </div>
+
+                    {formData.startDay && formData.endDay && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-800 font-medium mb-1">📅 Resumen del periodo:</p>
+                        {formData.endDay > formData.startDay ? (
+                          <p className="text-sm text-green-700">
+                            El formulario estará activo del <strong>día {formData.startDay} al {formData.endDay}</strong> del mismo mes.
+                          </p>
+                        ) : (
+                          <p className="text-sm text-green-700">
+                            El formulario estará activo del <strong>día {formData.startDay}</strong> hasta el <strong>día {formData.endDay} del mes siguiente</strong>.
+                            <br />
+                            <span className="text-xs">Ejemplo: Del 27 de enero al 5 de febrero, del 27 de febrero al 5 de marzo, etc.</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   {towers.map((tower, index) => {
@@ -323,10 +490,10 @@ export default function CreateForm() {
                     {formData.targetTowers.map((towerId) => {
                       const tower = towers.find(t => t.id === towerId);
                       const towerIndex = towers.findIndex(t => t.id === towerId);
-                      
+
                       return (
-                        <Badge 
-                          key={towerId} 
+                        <Badge
+                          key={towerId}
                           style={{ backgroundColor: getTowerColor(towerIndex) }}
                           className="text-white px-3 py-1 border-0"
                         >

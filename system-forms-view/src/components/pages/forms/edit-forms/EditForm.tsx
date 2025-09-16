@@ -6,7 +6,7 @@ import { useRouter, useParams } from "next/navigation"
 import { useAuth } from "@/providers/AuthProvider"
 import { useFormStore, type FormQuestion } from "@/stores/form-store"
 import { useTowersStore } from "@/stores/towers-store" // ✅ Importar el store de torres
-import { TOWER_COLORS } from "@/constants/colors"
+import { getTowerColor, TOWER_COLORS } from "@/constants/colors"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -344,13 +344,14 @@ export default function EditForm({formId}: {formId: string}) {
                 <Label className="text-lg font-medium text-gray-700">Torres Objetivo</Label>
                 <div className={`grid gap-4 ${towers.filter(t => t && t.name).length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                   {towers.filter(t => t && t.name).map((tower, index) => {
+                    const bgColor = getTowerColor(Number(tower.id ?? index))
+                    console.log(`Torre: ${tower.name} | ID: ${tower.id} | Color: ${bgColor} | Index: ${index}`);
                     const isSelected = formData.targetTowers.includes(String(tower.id));
                     return (
                       <div
                         key={tower.id}
-                        className={`p-4 rounded-xl ${TOWER_COLORS[index % TOWER_COLORS.length]} text-white shadow-lg hover:shadow-xl transition-all cursor-pointer ${
-                          isSelected ? "ring-4 ring-white ring-opacity-50" : ""
-                        }`}
+                        style={{ backgroundColor: bgColor }}
+                        className={`p-4 rounded-xl text-white shadow-lg hover:shadow-xl transition-all cursor-pointer ${isSelected ? "ring-4 ring-white/60": ""}`}
                       >
                         <div className="flex items-center space-x-3">
                           <Checkbox
@@ -388,9 +389,16 @@ export default function EditForm({formId}: {formId: string}) {
                   onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: !!checked }))}
                   className="data-[state=checked]:bg-blue-500 border-gray-300"
                 />
-                <Label htmlFor="isActive" className="text-lg font-medium text-gray-700 cursor-pointer">
-                  Formulario activo
-                </Label>
+                <div className="flex-1">
+                  <Label htmlFor="isActive" className="text-lg font-medium text-gray-700 cursor-pointer block">
+                    Formulario habilitado
+                  </Label>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formData.isActive 
+                      ? "El formulario está visible y disponible para usar" 
+                      : "El formulario está eliminado lógicamente (oculto)"}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

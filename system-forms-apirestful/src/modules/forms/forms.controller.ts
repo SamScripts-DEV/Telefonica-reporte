@@ -1,13 +1,14 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
-  UseGuards 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  ParseIntPipe
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FormsService } from './forms.service';
@@ -20,11 +21,12 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { RequestUser } from '../../common/interfaces/auth.interface';
 import { FormStatus } from '../../entities/form.entity';
+import { BulkSubmitDto } from './dto/bulk-evaluation.dto';
 
 @Controller('forms')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class FormsController {
-  constructor(private readonly formsService: FormsService) {}
+  constructor(private readonly formsService: FormsService) { }
 
   //Consumido
   @Post('create')
@@ -89,4 +91,47 @@ export class FormsController {
   assignTowers(@Param('id') id: string, @Body('towerIds') towerIds: number[], @GetUser() user: RequestUser) {
     return this.formsService.assignTowersToForm(id, towerIds);
   }
+
+  @Get('evaluation-matrix/:towerId')
+  //@Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
+  getEvaluationMatrix(
+    @Param('towerId', ParseIntPipe) towerId: number,
+    @GetUser() user: RequestUser
+  ) {
+    return this.formsService.getEvaluationMatrix(towerId, user);
+  }
+
+  @Get('evaluation-progress/:towerId')
+  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
+  getEvaluationProgress(
+    @Param('towerId', ParseIntPipe) towerId: number,
+    @GetUser() user: RequestUser
+  ) {
+    return this.formsService.getEvaluationProgress(towerId, user);
+  }
+
+  @Post('bulk-submit')
+  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
+  bulkSubmitEvaluations(
+    @Body() bulkSubmitDto: BulkSubmitDto,
+    @GetUser() user: RequestUser
+  ) {
+    return this.formsService.bulkSubmitEvaluations(bulkSubmitDto, user);
+  }
+
+
+  @Post('check-periodic')
+  @Roles('dev', 'superadmin')
+  async checkPeriodicForms(@GetUser() user: RequestUser) {
+    console.log('🔄 Manual check triggered by:', user.email);
+    await this.formsService.checkAndUpdatePeriodicForms();
+    return {
+      message: 'Periodic forms check completed',
+      timestamp: new Date().toISOString(),
+      triggeredBy: user.email
+    };
+  }
+
+
+
 }

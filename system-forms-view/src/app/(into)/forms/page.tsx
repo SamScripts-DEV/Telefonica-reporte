@@ -4,8 +4,8 @@ import FormsView from "@/components/pages/forms/FormView";
 
 
 export const metadata = {
-    title: 'Forms',
-    description: 'Forms Page',
+    title: 'Formularios',
+    description: 'Página de Formularios',
 };
 
 const FormsPage = () => {

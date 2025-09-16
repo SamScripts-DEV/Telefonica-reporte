@@ -1,13 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
-  UseGuards 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { TechniciansService } from './technicians.service';
@@ -22,16 +22,11 @@ import { RequestUser } from '../../common/interfaces/auth.interface';
 @Controller('technicians')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class TechniciansController {
-  constructor(private readonly techniciansService: TechniciansService) {}
+  constructor(private readonly techniciansService: TechniciansService) { }
 
-  @Post()
-  @Roles('dev', 'superadmin', 'pm', 'jefe')
-  create(@Body() createTechnicianDto: CreateTechnicianDto) {
-    return this.techniciansService.create(createTechnicianDto);
-  }
 
   @Get()
-  @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador')
+  //@Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador')
   findAll(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
     return this.techniciansService.findAll(paginationDto, user);
   }
@@ -46,6 +41,14 @@ export class TechniciansController {
   @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador')
   findOne(@Param('id') id: string, @GetUser() user: RequestUser) {
     return this.techniciansService.findOne(id, user);
+  }
+
+  @Post()
+  @Roles('dev', 'superadmin', 'pm', 'jefe')
+  create(@Body() createTechnicianDto: CreateTechnicianDto) {
+    console.log('[CONTROLLER] Create Technician DTO:', createTechnicianDto);
+    
+    return this.techniciansService.create(createTechnicianDto);
   }
 
   @Patch(':id')

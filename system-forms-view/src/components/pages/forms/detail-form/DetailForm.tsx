@@ -208,14 +208,38 @@ export default function DetailForm({formId}: {formId: string}) {
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Estado y Torres</h3>
-                  <Badge
-                    variant={form.isActive ? "default" : "secondary"}
-                    className={
-                      form.isActive ? "bg-green-600 text-white border-0" : "bg-gray-200 text-gray-700"
-                    }
-                  >
-                    {form.isActive ? "Activo" : "Inactivo"}
-                  </Badge>
+                  <div className="flex gap-2">
+                    <Badge
+                      className={
+                        form.status === "active" 
+                          ? "bg-green-100 text-green-800 border border-green-200" 
+                          : form.status === "draft"
+                          ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                          : form.status === "closed"
+                          ? "bg-red-100 text-red-800 border border-red-200"
+                          : "bg-gray-100 text-gray-800 border border-gray-200"
+                      }
+                    >
+                      {form.status === "active" && "Activo para responder"}
+                      {form.status === "draft" && "En borrador"}
+                      {form.status === "closed" && "Cerrado"}
+                      {!["active", "draft", "closed"].includes(form.status) && form.status}
+                    </Badge>
+                    <Badge
+                      className={
+                        form.isActive 
+                          ? "bg-blue-50 text-blue-700 border border-blue-200" 
+                          : "bg-red-50 text-red-700 border border-red-200"
+                      }
+                    >
+                      {form.isActive ? "Visible" : "Eliminado"}
+                    </Badge>
+                    {form.type === "periodic" && (
+                      <Badge className="bg-gray-50 text-gray-700 border border-gray-200">
+                        Periódico (día {form.startDay}-{form.endDay})
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {form.towers?.map((tower: any, index: number) => {

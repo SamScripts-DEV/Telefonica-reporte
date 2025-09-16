@@ -1,13 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
-  UseGuards 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
@@ -20,7 +20,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 @Controller('users')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   @Roles('dev', 'superadmin', 'pm')
@@ -62,5 +62,19 @@ export class UsersController {
   @Roles('dev', 'superadmin')
   assignGroups(@Param('id') id: string, @Body('groupIds') groupIds: number[]) {
     return this.usersService.assignGroupsToUser(id, groupIds);
+  }
+
+
+  @Get(':id/evaluation-status')
+  @Roles('dev', 'superadmin', 'pm', 'jefe')
+  getUserEvaluationStatus(@Param('id') id: string) {
+    return this.usersService.getUserEvaluationStatus(id);
+  }
+
+  // En UsersController
+  @Post('sync-technician-mappings')
+  //@Roles('dev', 'superadmin', 'pm')
+  syncTechnicianMappings() {
+    return this.usersService.syncAllEvaluatorTechnicianMappings();
   }
 }

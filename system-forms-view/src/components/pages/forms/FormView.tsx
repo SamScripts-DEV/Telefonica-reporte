@@ -2,9 +2,6 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-// ❌ CAMBIAR ESTA LÍNEA:
-// import { useAuthStore } from "@/stores/auth-store"
-// ✅ POR ESTA:
 import { useAuth } from "@/providers/AuthProvider"
 import { useFormStore } from "@/stores/form-store"
 import { Button } from "@/components/ui/button"
@@ -17,29 +14,13 @@ import { getTowerColor, getFormHeaderColor } from "@/constants/colors" // ✅ Im
 import { useTowersStore } from "@/stores/towers-store"
 
 export default function FormsView() {
-  // ❌ CAMBIAR ESTA LÍNEA:
-  // const { user, isAuthenticated, checkAuth, isInitialized } = useAuthStore()
-  // ✅ POR ESTA:
+
   const { user, isAuthenticated, isLoading } = useAuth()
   
   const { forms, getForms, deleteForm, isLoading: formsLoading, error } = useFormStore()
   const { towers, fetchTowers } = useTowersStore()
   const router = useRouter()
 
-  // ❌ ELIMINAR ESTOS useEffect:
-  // useEffect(() => {
-  //   checkAuth()
-  // }, [checkAuth])
-
-  // useEffect(() => {
-  //   if (isInitialized) {
-  //     if (!isAuthenticated) {
-  //       router.push("/login")
-  //     } else if (user && user.role !== "superadmin") {
-  //       router.push("/dashboard")
-  //     }
-  //   }
-  // }, [isInitialized, isAuthenticated, user, router])
 
   // ✅ AGREGAR ESTE useEffect:
   useEffect(() => {
@@ -159,24 +140,14 @@ export default function FormsView() {
               return (
                 <Card
                   key={form.id}
-                  className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white overflow-hidden"
-                  style={{ borderTop: `4px solid ${getFormHeaderColor(index).replace('bg-', '#')}` }}
+                  className="hover:shadow-lg transition-all duration-200 border border-gray-200 bg-white"
                 >
-                  {/* Header colorido - mantener la línea superior */}
-                  <div 
-                    style={{ backgroundColor: getFormHeaderColor(index) }}
-                    className="h-1"
-                  ></div>
-
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <div 
-                            style={{ backgroundColor: getFormHeaderColor(index) }}
-                            className="p-1.5 rounded-full"
-                          >
-                            <FileText className="h-4 w-4 text-white" />
+                          <div className="p-1.5 rounded bg-gray-100">
+                            <FileText className="h-4 w-4 text-gray-600" />
                           </div>
                           <CardTitle className="text-lg text-gray-900">{form.title}</CardTitle>
                         </div>
@@ -188,19 +159,19 @@ export default function FormsView() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="hover:bg-gray-100 text-gray-700">
+                          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <Link href={`/forms/${form.id}`}>
-                            <DropdownMenuItem className="text-gray-700 hover:bg-gray-50">
+                            <DropdownMenuItem>
                               <Eye className="mr-2 h-4 w-4" />
                               Ver
                             </DropdownMenuItem>
                           </Link>
                           <Link href={`/forms/${form.id}/edit`}>
-                            <DropdownMenuItem className="text-gray-700 hover:bg-gray-50">
+                            <DropdownMenuItem>
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </DropdownMenuItem>
@@ -230,14 +201,45 @@ export default function FormsView() {
                       </div>
 
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Estado:</span>
+                        <span className="text-gray-600">Estado del formulario:</span>
                         <Badge
-                          variant={form.isActive ? "default" : "secondary"}
                           className={
-                            form.isActive ? `bg-green-600 text-white border-0` : "bg-gray-200 text-gray-700"
+                            form.status === "active" 
+                              ? "bg-green-100 text-green-800 border border-green-200" 
+                              : form.status === "draft"
+                              ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                              : form.status === "closed"
+                              ? "bg-red-100 text-red-800 border border-red-200"
+                              : "bg-gray-100 text-gray-800 border border-gray-200"
                           }
                         >
-                          {form.isActive ? "Activo" : "Inactivo"}
+                          {form.status === "active" && "Activo para responder"}
+                          {form.status === "draft" && "En borrador"}
+                          {form.status === "closed" && "Cerrado"}
+                          {!["active", "draft", "closed"].includes(form.status) && form.status}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Visibilidad:</span>
+                        <Badge
+                          className={
+                            form.isActive 
+                              ? "bg-blue-50 text-blue-700 border border-blue-200" 
+                              : "bg-red-50 text-red-700 border border-red-200"
+                          }
+                        >
+                          {form.isActive ? "Visible" : "Eliminado"}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Modalidad:</span>
+                        <Badge className="bg-gray-50 text-gray-700 border border-gray-200">
+                          {form.type === "periodic" 
+                            ? `Periódico (día ${form.startDay} al ${form.endDay})`
+                            : "Una sola vez"
+                          }
                         </Badge>
                       </div>
 
@@ -245,20 +247,14 @@ export default function FormsView() {
                         <span className="text-sm text-gray-600 mb-2 block">Torres:</span>
                         <div className="flex flex-wrap gap-1">
                           {form.towers && form.towers.length > 0 ? (
-                            form.towers.map((tower) => {
-                              const realTowerIndex = towers.findIndex(t => t.id === tower.id);
-                              const towerIndex = realTowerIndex !== -1 ? realTowerIndex : 0;
-                              
-                              return (
-                                <Badge
-                                  key={tower.id}
-                                  style={{ backgroundColor: getTowerColor(towerIndex) }}
-                                  className="text-white text-xs border-0"
-                                >
-                                  {tower.name}
-                                </Badge>
-                              )
-                            })
+                            form.towers.map((tower, towerIndex) => (
+                              <Badge
+                                key={tower.id}
+                                className="bg-gray-100 text-gray-700 border border-gray-200 text-xs"
+                              >
+                                {tower.name}
+                              </Badge>
+                            ))
                           ) : (
                             <span className="text-xs text-gray-500">Sin torres asignadas</span>
                           )}
@@ -271,7 +267,7 @@ export default function FormsView() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="w-full bg-transparent hover:bg-gray-50 border-gray-300 text-gray-700"
+                              className="w-full"
                             >
                               <Eye className="mr-2 h-4 w-4" />
                               Ver
@@ -280,8 +276,7 @@ export default function FormsView() {
                           <Link href={`/forms/${form.id}/edit`} className="flex-1">
                             <Button 
                               size="sm" 
-                              style={{ backgroundColor: getFormHeaderColor(index) }}
-                              className="w-full hover:opacity-90 text-white border-0"
+                              className="w-full"
                             >
                               <Edit className="mr-2 h-4 w-4" />
                               Editar

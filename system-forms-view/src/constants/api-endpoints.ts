@@ -13,6 +13,7 @@ export const api_endpoints = {
         getForms: '/forms',
         getFormById: (id: string) => `/forms/${id}`,
         updatedForm: (id: string) => `/forms/${id}`, // <-- PATCH
+        getEvaluationMatrix: (id: number) => `/forms/evaluation-matrix/${id}`,
         
     },
     towers: {
@@ -25,17 +26,21 @@ export const api_endpoints = {
     users: {
         getUsers: '/users',
         createUser: '/users',
-        updateUser: '/users/update',
-        deleteUser: '/users/delete',
+        updateUser: (id: string) => `/users/${id}`,
+        deleteUser: (id: string) => `/users/${id}`,
         technicians: {
             createTechnician: '/technicians',
             getTechnicians: '/technicians',
+            updateTechnician: (id: string) => `/technicians/${id}`,
 
         }
     },
     formsforClient:{
         getFormById: (id: string) => `/forms/${id}`,
         submitForm: (id: string) => `/forms/${id}/submit`,
+
+
+        submitBulkEvaluations: 'forms/bulk-submit'
     }
     
 }

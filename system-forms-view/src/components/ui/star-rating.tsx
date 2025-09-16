@@ -74,15 +74,15 @@ export function StarRating({
   }
 
   return (
-    <div className={cn("flex flex-col items-center space-y-2", className)}>
-      <div 
-        className={cn("flex", spacingClasses[size])}
-        onMouseLeave={handleMouseLeave}
-      >
+    <div
+      className={cn("flex flex-col items-center space-y-2", className)}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div className={cn("flex", spacingClasses[size])}>
         {Array.from({ length: maxStars }, (_, index) => {
           const starValue = index + 1
           const isFilled = starValue <= currentRating
-          
+
           return (
             <button
               key={index}
@@ -100,8 +100,8 @@ export function StarRating({
                 className={cn(
                   sizeClasses[size],
                   "transition-colors duration-200",
-                  isFilled 
-                    ? "fill-yellow-400 text-yellow-400" 
+                  isFilled
+                    ? "fill-yellow-400 text-yellow-400"
                     : "fill-gray-200 text-gray-300",
                   !readonly && "hover:fill-yellow-300 hover:text-yellow-300"
                 )}
@@ -110,17 +110,20 @@ export function StarRating({
           )
         })}
       </div>
-      
+
       {/* Mostrar descripción si existe */}
       {currentDescription && (showDescription || readonly) && (
-        <div className={cn(
-          "text-center text-gray-600 font-medium max-w-xs px-3 py-2 bg-gray-50 rounded-lg border",
-          textSizeClasses[size]
-        )}>
+        <div
+          className={cn(
+            "text-center text-gray-600 font-medium max-w-xs px-3 py-2 bg-gray-50 rounded-lg border",
+            textSizeClasses[size]
+          )}
+          style={{ pointerEvents: "none" }}
+        >
           {currentDescription}
         </div>
       )}
-      
+
       {/* Mostrar rating actual */}
       {currentRating > 0 && (
         <div className={cn(

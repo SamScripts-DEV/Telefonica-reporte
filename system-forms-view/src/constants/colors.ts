@@ -74,3 +74,9 @@ export const getClientFormColors = (index: number) => {
     border: CLIENT_FORM_BORDER_COLORS[index % CLIENT_FORM_BORDER_COLORS.length]
   };
 };
+
+export const getTowerColorById = (id: number | string): string => {
+  // Convierte el ID a número y usa módulo para asignar color
+  const numId = Number(id);
+  return TOWER_COLORS[numId % TOWER_COLORS.length];
+};

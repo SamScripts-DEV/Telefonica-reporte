@@ -156,3 +156,68 @@ Insert into towers(name) values
 
   INSERT INTO roles (name) VALUES ('superadmin') ON CONFLICT (name) DO NOTHING;
   INSERT INTO groups (name) VALUES ('superadmins') ON CONFLICT (name) DO NOTHING;
+
+
+--Falta llamar en produ
+
+  ALTER TABLE question_responses
+  ADD COLUMN technician_id uuid NOT NULL;
+
+  ALTER TABLE question_responses
+  ADD CONSTRAINT fk_question_responses_technician
+  FOREIGN KEY (technician_id) REFERENCES technicians(id)
+  ON DELETE RESTRICT
+  ON UPDATE CASCADE;
+
+
+  -- Agregar campos para formularios periódicos mensuales
+ALTER TABLE forms 
+ADD COLUMN is_monthly_periodic BOOLEAN DEFAULT false,
+ADD COLUMN evaluation_month VARCHAR(7), -- Formato: 'YYYY-MM'
+ADD COLUMN auto_activate BOOLEAN DEFAULT false;
+
+-- Agregar comentarios para documentar
+COMMENT ON COLUMN forms.is_monthly_periodic IS 'Indica si es un formulario de evaluación mensual periódica';
+COMMENT ON COLUMN forms.evaluation_month IS 'Mes que se está evaluando en formato YYYY-MM';
+COMMENT ON COLUMN forms.auto_activate IS 'Si se activa automáticamente del 27 al 5';
+
+
+-- Agregar campo para identificar el período de evaluación
+ALTER TABLE form_responses 
+ADD COLUMN evaluation_period VARCHAR(7); -- Formato: 'YYYY-MM'
+
+-- Agregar comentario
+COMMENT ON COLUMN form_responses.evaluation_period IS 'Período que se evaluó en formato YYYY-MM';
+
+
+-- Índices para consultas frecuentes
+CREATE INDEX idx_forms_monthly_periodic ON forms(is_monthly_periodic);
+CREATE INDEX idx_forms_auto_activate ON forms(auto_activate);
+CREATE INDEX idx_forms_evaluation_month ON forms(evaluation_month);
+CREATE INDEX idx_form_responses_evaluation_period ON form_responses(evaluation_period);
+
+-- Índice compuesto para verificar respuestas duplicadas por período
+CREATE INDEX idx_form_responses_user_period ON form_responses(form_id, user_id, evaluation_period);
+
+
+
+
+-- Actualizar la tabla existente
+ALTER TABLE forms 
+ADD COLUMN type VARCHAR(20) DEFAULT 'single',
+ADD COLUMN start_day INTEGER DEFAULT 27,
+ADD COLUMN end_day INTEGER DEFAULT 5,
+ADD COLUMN current_period VARCHAR(7),
+ADD COLUMN period_start_date TIMESTAMP,
+ADD COLUMN period_end_date TIMESTAMP;
+
+-- Migrar datos existentes
+UPDATE forms 
+SET type = CASE 
+  WHEN is_monthly_periodic = true THEN 'periodic'
+  ELSE 'single'
+END;
+
+
+ALTER TABLE forms DROP COLUMN is_monthly_periodic;
+ALTER TABLE forms DROP COLUMN evaluation_month;

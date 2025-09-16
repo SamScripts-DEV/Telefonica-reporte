@@ -1,12 +1,12 @@
 import { QuestionResponse } from './question-response.entity';
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  ManyToOne, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
   OneToMany,
   CreateDateColumn,
-  JoinColumn 
+  JoinColumn
 } from 'typeorm';
 import { Form } from './form.entity';
 import { User } from './user.entity';
@@ -22,6 +22,12 @@ export class FormResponse {
 
   @Column({ name: 'user_id', nullable: true })
   userId: string;
+
+  // ⭐ CAMPO PARA IDENTIFICAR EL PERÍODO EVALUADO
+  // Para formularios periódicos: "2025-09" (septiembre 2025)
+  // Para formularios single: null
+  @Column({ name: 'evaluation_period', nullable: true })
+  evaluationPeriod: string;
 
   @CreateDateColumn({ name: 'submitted_at' })
   submittedAt: Date;

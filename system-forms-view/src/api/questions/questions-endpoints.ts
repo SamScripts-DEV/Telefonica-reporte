@@ -15,7 +15,7 @@ export const questionsApi = {
 
   createMultipleQuestions: async (questions: QuestionCreateRequest[]) => {
     try {
-      const promises = questions.map(question => 
+      const promises = questions.map(question =>
         api.post(api_endpoints.questions.createQuestion, question)
       )
       const responses = await Promise.all(promises)
