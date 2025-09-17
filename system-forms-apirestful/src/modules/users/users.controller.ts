@@ -30,8 +30,8 @@ export class UsersController {
 
   @Get()
   @Roles('dev', 'superadmin', 'pm', 'jefe')
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.usersService.findAll(paginationDto);
+  findAll() {
+    return this.usersService.findAll();
   }
 
   @Get(':id')

@@ -12,8 +12,6 @@ import { cn } from "@/lib/utils"
 export function Navbar() {
   const { user, logout, isLoading } = useAuth()
 
-  console.log('NavBar - user:', user, 'isLoading:', isLoading) // ✅ Debug
-
   const pathname = usePathname()
 
   if (!user || user.role === "client") {

@@ -40,7 +40,6 @@ import type { CreateSystemUserDto, CreateTechnicianDto } from "@/types/users-typ
 import { User, Technician, useUserStore } from "@/stores/user-store"
 import { useTowersStore } from "@/stores/towers-store"
 
-
 export default function UserManagementPage() {
     const router = useRouter()
     const { user, isAuthenticated, checkAuth } = useAuth()
@@ -57,11 +56,9 @@ export default function UserManagementPage() {
         updateTechnician,
         deleteTechnician,
         deleteUser,
-
     } = useUserStore()
 
     // Data states
-
     const [loading, setLoading] = useState(true)
 
     // UI states
@@ -72,17 +69,39 @@ export default function UserManagementPage() {
     const [isCreateTechDialogOpen, setIsCreateTechDialogOpen] = useState(false)
     const [creatingUser, setCreatingUser] = useState(false)
     const [creatingTech, setCreatingTech] = useState(false)
-    const [userForm, setUserForm] = useState<{ towerIds: number[] }>({ towerIds: [] });
+
+    // Form states - usando objetos normales
+    const [userForm, setUserForm] = useState<CreateSystemUserDto>({
+        name: "",
+        email: "",
+        password: "",
+        roleId: 0,
+        isActive: true,
+        towerIds: [],
+        groupIds: []
+    })
+
+    const [techForm, setTechForm] = useState<CreateTechnicianDto>({
+        name: "",
+        towerId: 0
+    })
+
     const [editingUser, setEditingUser] = useState<User | null>(null)
     const [editingTechnician, setEditingTechnician] = useState<Technician | null>(null)
     const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false)
     const [isEditTechDialogOpen, setIsEditTechDialogOpen] = useState(false)
     const [updatingUser, setUpdatingUser] = useState(false)
     const [updatingTech, setUpdatingTech] = useState(false)
-    const [deletingItem, setDeletingItem] = useState<{ id: string; name: string; type: "user" | "technician" } | null>(
-        null,
-    )
-
+    const [deletingItem, setDeletingItem] = useState<{ id: string; name: string; type: "user" | "technician" } | null>(null)
+    const [editUserForm, setEditUserForm] = useState<Partial<CreateSystemUserDto>>({
+        name: "",
+        email: "",
+        password: "",
+        roleId: 0,
+        isActive: true,
+        towerIds: [],
+        groupIds: []
+    })
 
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -92,34 +111,70 @@ export default function UserManagementPage() {
         }
     }, [isAuthenticated, user, fetchTowers, getUsers, getTechnicians])
 
+    // Reset form cuando se cierra el dialog
+    useEffect(() => {
+        if (!isCreateUserDialogOpen) {
+            setUserForm({
+                name: "",
+                email: "",
+                password: "",
+                roleId: 0,
+                isActive: true,
+                towerIds: [],
+                groupIds: []
+            })
+        }
+    }, [isCreateUserDialogOpen])
 
+    useEffect(() => {
+        if (!isCreateTechDialogOpen) {
+            setTechForm({
+                name: "",
+                towerId: 0
+            })
+        }
+    }, [isCreateTechDialogOpen])
 
-    const handleCreateUser = async (formData: FormData) => {
+    // Actualizar cuando se abre el modal de edición
+    useEffect(() => {
+        if (editingUser && isEditUserDialogOpen) {
+            setEditUserForm({
+                name: editingUser.name,
+                email: editingUser.email,
+                password: "", // Siempre vacío para nuevas contraseñas
+                roleId: editingUser.roleId,
+                isActive: editingUser.isActive,
+                towerIds: editingUser.towers.map(t => t.id),
+                groupIds: editingUser.groups?.map(g => g.id) || []
+            })
+        }
+    }, [editingUser, isEditUserDialogOpen])
+
+    // Reset form cuando se cierra el modal de edición
+    useEffect(() => {
+        if (!isEditUserDialogOpen) {
+            setEditUserForm({
+                name: "",
+                email: "",
+                password: "",
+                roleId: 0,
+                isActive: true,
+                towerIds: [],
+                groupIds: []
+            })
+        }
+    }, [isEditUserDialogOpen])
+
+    const handleCreateUser = async (e: React.FormEvent) => {
+        e.preventDefault()
         setCreatingUser(true)
         try {
-            formData.set("towerIds", userForm.towerIds.join(","));
-            const dto: CreateSystemUserDto = {
-                name: formData.get("name") as string,
-                email: formData.get("email") as string,
-                password: formData.get("password") as string,
-                roleId: Number(formData.get("roleId")),
-                isActive: formData.get("isActive") === "on",
-                towerIds:
-                    formData
-                        .get("towerIds")
-                        ?.toString()
-                        .split(",")
-                        .map((id) => Number(id.trim()))
-                        .filter((id) => !isNaN(id)) || [],
-                groupIds: [],
-            }
 
-            // Simular llamada a API
-            await createUser(dto)
+            await createUser(userForm)
 
             toast({
                 title: "Usuario creado",
-                description: `Usuario ${dto.name} creado exitosamente.`,
+                description: `Usuario ${userForm.name} creado exitosamente.`,
                 variant: "default",
             })
 
@@ -136,19 +191,16 @@ export default function UserManagementPage() {
         }
     }
 
-    const handleCreateTechnician = async (formData: FormData) => {
+    const handleCreateTechnician = async (e: React.FormEvent) => {
+        e.preventDefault()
         setCreatingTech(true)
         try {
-            const dto: CreateTechnicianDto = {
-                name: formData.get("name") as string,
-                towerId: Number(formData.get("towerId")),
-            }
 
-            await createTechnician(dto)
+            await createTechnician(techForm)
 
             toast({
                 title: "Técnico creado",
-                description: `Técnico ${dto.name} creado exitosamente.`,
+                description: `Técnico ${techForm.name} creado exitosamente.`,
                 variant: "default",
             })
 
@@ -165,17 +217,22 @@ export default function UserManagementPage() {
         }
     }
 
-    // ...existing code...
-
     // Actualizar usuario
-    const handleUpdateUser = async (id: string, updatedData: Partial<CreateSystemUserDto>) => {
+    const handleUpdateUser = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editingUser) return
+
+        setUpdatingUser(true)
         try {
-            await useUserStore.getState().updateUser(id, updatedData)
+
+
+            await useUserStore.getState().updateUser(editingUser.id, editUserForm)
             toast({
                 title: "Usuario actualizado",
                 description: "Los datos del usuario han sido actualizados.",
                 variant: "default",
             })
+            setIsEditUserDialogOpen(false)
             getUsers()
         } catch (error) {
             toast({
@@ -183,6 +240,8 @@ export default function UserManagementPage() {
                 description: "No se pudo actualizar el usuario.",
                 variant: "destructive",
             })
+        } finally {
+            setUpdatingUser(false)
         }
     }
 
@@ -204,9 +263,6 @@ export default function UserManagementPage() {
             })
         }
     }
-
-
-
 
     // Actualizar técnico
     const handleUpdateTechnician = async (id: string, updatedData: Partial<CreateTechnicianDto>) => {
@@ -255,7 +311,6 @@ export default function UserManagementPage() {
         }
         setDeletingItem(null)
     }
-
 
     // Filter users
     const filteredUsers = users.filter((u) => {
@@ -306,7 +361,6 @@ export default function UserManagementPage() {
         client: "Cliente",
         technician: "Técnico",
         evaluador: "Evaluador"
-        // Agrega más si tienes otros roles
     };
 
     const ROLES = [
@@ -314,9 +368,6 @@ export default function UserManagementPage() {
         { id: 2, name: "admin" },
         { id: 3, name: "client" },
     ]
-
-
-
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -367,34 +418,45 @@ export default function UserManagementPage() {
                                                     Añade un nuevo usuario con acceso al sistema.
                                                 </DialogDescription>
                                             </DialogHeader>
-                                            <form
-                                                onSubmit={(e) => {
-                                                    e.preventDefault()
-                                                    handleCreateUser(new FormData(e.currentTarget))
-                                                }}
-                                                className="space-y-4"
-                                            >
+                                            <form onSubmit={handleCreateUser} className="space-y-4">
                                                 <div>
                                                     <Label htmlFor="name">Nombre Completo</Label>
-                                                    <Input id="name" name="name" required placeholder="Ej: Juan Pérez" />
+                                                    <Input
+                                                        id="name"
+                                                        value={userForm.name}
+                                                        onChange={(e) => setUserForm(prev => ({ ...prev, name: e.target.value }))}
+                                                        required
+                                                        placeholder="Ej: Juan Pérez"
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label htmlFor="email">Correo Electrónico</Label>
-                                                    <Input id="email" name="email" type="email" required placeholder="usuario@empresa.com" />
+                                                    <Input
+                                                        id="email"
+                                                        type="email"
+                                                        value={userForm.email}
+                                                        onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
+                                                        required
+                                                        placeholder="usuario@empresa.com"
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label htmlFor="password">Contraseña Temporal</Label>
                                                     <Input
                                                         id="password"
-                                                        name="password"
                                                         type="password"
+                                                        value={userForm.password}
+                                                        onChange={(e) => setUserForm(prev => ({ ...prev, password: e.target.value }))}
                                                         required
                                                         placeholder="Mínimo 6 caracteres"
                                                     />
                                                 </div>
                                                 <div>
                                                     <Label htmlFor="roleId">Rol</Label>
-                                                    <Select name="roleId" required>
+                                                    <Select
+                                                        value={String(userForm.roleId || "")}
+                                                        onValueChange={(value) => setUserForm(prev => ({ ...prev, roleId: Number(value) }))}
+                                                    >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecciona un rol" />
                                                         </SelectTrigger>
@@ -415,14 +477,14 @@ export default function UserManagementPage() {
                                                                 <input
                                                                     type="checkbox"
                                                                     value={tower.id}
-                                                                    checked={Array.isArray(userForm.towerIds) && userForm.towerIds.includes(Number(tower.id))}
+                                                                    checked={userForm.towerIds.includes(Number(tower.id))}
                                                                     onChange={e => {
-                                                                        const id = Number(e.target.value); // Ensure id is a number
-                                                                        setUserForm(f => ({
-                                                                            ...f,
+                                                                        const id = Number(e.target.value);
+                                                                        setUserForm(prev => ({
+                                                                            ...prev,
                                                                             towerIds: e.target.checked
-                                                                                ? [...(Array.isArray(f.towerIds) ? f.towerIds : []), id]
-                                                                                : (Array.isArray(f.towerIds) ? f.towerIds.filter(tid => tid !== id) : [])
+                                                                                ? [...prev.towerIds, id]
+                                                                                : prev.towerIds.filter(tid => tid !== id)
                                                                         }));
                                                                     }}
                                                                     className="accent-blue-600"
@@ -433,7 +495,11 @@ export default function UserManagementPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    <Checkbox id="isActive" name="isActive" defaultChecked />
+                                                    <Checkbox
+                                                        id="isActive"
+                                                        checked={userForm.isActive}
+                                                        onCheckedChange={(checked) => setUserForm(prev => ({ ...prev, isActive: !!checked }))}
+                                                    />
                                                     <Label htmlFor="isActive">Usuario Activo</Label>
                                                 </div>
                                                 <DialogFooter>
@@ -583,20 +649,23 @@ export default function UserManagementPage() {
                                                     Añade un nuevo técnico y asígnalo a una torre.
                                                 </DialogDescription>
                                             </DialogHeader>
-                                            <form
-                                                onSubmit={(e) => {
-                                                    e.preventDefault()
-                                                    handleCreateTechnician(new FormData(e.currentTarget))
-                                                }}
-                                                className="space-y-4"
-                                            >
+                                            <form onSubmit={handleCreateTechnician} className="space-y-4">
                                                 <div>
                                                     <Label htmlFor="tech-name">Nombre Completo</Label>
-                                                    <Input id="tech-name" name="name" required placeholder="Ej: María López" />
+                                                    <Input
+                                                        id="tech-name"
+                                                        value={techForm.name}
+                                                        onChange={(e) => setTechForm(prev => ({ ...prev, name: e.target.value }))}
+                                                        required
+                                                        placeholder="Ej: María López"
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label htmlFor="towerId">Torre Asignada</Label>
-                                                    <Select name="towerId" required>
+                                                    <Select
+                                                        value={String(techForm.towerId || "")}
+                                                        onValueChange={(value) => setTechForm(prev => ({ ...prev, towerId: Number(value) }))}
+                                                    >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecciona una torre" />
                                                         </SelectTrigger>
@@ -692,44 +761,25 @@ export default function UserManagementPage() {
                 </Tabs>
             </div>
 
-
+            {/* Resto de los modals... */}
             {/* Modal de Edición de Usuario */}
             <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
                 <DialogContent className="bg-white max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-app-gray-900">Editar Usuario</DialogTitle>
-                        <DialogDescription className="text-app-gray-600">
+                        <DialogTitle className="text-gray-900">Editar Usuario</DialogTitle>
+                        <DialogDescription className="text-gray-600">
                             Modifica la información del usuario seleccionado.
                         </DialogDescription>
                     </DialogHeader>
                     {editingUser && (
-                        <form
-                            onSubmit={async (e) => {
-                                e.preventDefault()
-                                const formData = new FormData(e.currentTarget)
-                                // Procesa los towerIds como array
-                                const towerIds = formData.get("towerIds")
-                                    ? formData.get("towerIds")!.toString().split(",").map(id => Number(id.trim())).filter(id => !isNaN(id))
-                                    : []
-                                await handleUpdateUser(editingUser.id, {
-                                    name: formData.get("name") as string,
-                                    email: formData.get("email") as string,
-                                    password: formData.get("password") as string,
-                                    roleId: Number(formData.get("roleId")),
-                                    isActive: formData.get("isActive") === "on",
-                                    towerIds,
-                                })
-                                setIsEditUserDialogOpen(false)
-                            }}
-                            className="space-y-4"
-                        >
+                        <form onSubmit={handleUpdateUser} className="space-y-4">
                             <div>
                                 <Label htmlFor="edit-name">Nombre Completo</Label>
                                 <Input
                                     id="edit-name"
-                                    name="name"
+                                    value={editUserForm.name || ""}
+                                    onChange={(e) => setEditUserForm(prev => ({ ...prev, name: e.target.value }))}
                                     required
-                                    defaultValue={editingUser.name}
                                     placeholder="Ej: Juan Pérez"
                                 />
                             </div>
@@ -737,10 +787,10 @@ export default function UserManagementPage() {
                                 <Label htmlFor="edit-email">Correo Electrónico</Label>
                                 <Input
                                     id="edit-email"
-                                    name="email"
                                     type="email"
+                                    value={editUserForm.email || ""}
+                                    onChange={(e) => setEditUserForm(prev => ({ ...prev, email: e.target.value }))}
                                     required
-                                    defaultValue={editingUser.email}
                                     placeholder="usuario@empresa.com"
                                 />
                             </div>
@@ -748,35 +798,61 @@ export default function UserManagementPage() {
                                 <Label htmlFor="edit-password">Nueva Contraseña (opcional)</Label>
                                 <Input
                                     id="edit-password"
-                                    name="password"
                                     type="password"
+                                    value={editUserForm.password || ""}
+                                    onChange={(e) => setEditUserForm(prev => ({ ...prev, password: e.target.value }))}
                                     placeholder="Dejar vacío para mantener actual"
                                 />
                             </div>
                             <div>
                                 <Label htmlFor="edit-roleId">Rol</Label>
-                                <Select name="roleId" defaultValue={editingUser.roleId.toString()} required>
+                                <Select
+                                    value={String(editUserForm.roleId || "")}
+                                    onValueChange={(value) => setEditUserForm(prev => ({ ...prev, roleId: Number(value) }))}
+                                >
                                     <SelectTrigger>
-                                        <SelectValue />
+                                        <SelectValue placeholder="Selecciona un rol" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="1">Administrador</SelectItem>
-                                        <SelectItem value="2">Cliente</SelectItem>
-                                        <SelectItem value="3">Técnico</SelectItem>
+                                        {ROLES.map(role => (
+                                            <SelectItem key={role.id} value={String(role.id)}>
+                                                {ROLE_LABELS[role.name] || role.name}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
-                                <Label htmlFor="edit-towerIds">Torres (IDs separados por comas)</Label>
-                                <Input
-                                    id="edit-towerIds"
-                                    name="towerIds"
-                                    defaultValue={editingUser.towers.map((t) => t.id).join(", ")}
-                                    placeholder="Ej: 1, 2, 5"
-                                />
+                                <Label className="text-gray-700">Torres relacionadas</Label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {towers.map(tower => (
+                                        <label key={tower.id} className="flex items-center space-x-1 bg-gray-50 px-2 py-1 rounded-lg shadow-sm hover:bg-blue-50 cursor-pointer transition">
+                                            <input
+                                                type="checkbox"
+                                                value={tower.id}
+                                                checked={editUserForm.towerIds?.includes(Number(tower.id)) || false}
+                                                onChange={e => {
+                                                    const id = Number(e.target.value);
+                                                    setEditUserForm(prev => ({
+                                                        ...prev,
+                                                        towerIds: e.target.checked
+                                                            ? [...(prev.towerIds || []), id]
+                                                            : (prev.towerIds || []).filter(tid => tid !== id)
+                                                    }));
+                                                }}
+                                                className="accent-blue-600"
+                                            />
+                                            <span className="text-sm text-gray-700">{tower.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <Checkbox id="edit-isActive" name="isActive" defaultChecked={editingUser.isActive} />
+                                <Checkbox
+                                    id="edit-isActive"
+                                    checked={editUserForm.isActive || false}
+                                    onCheckedChange={(checked) => setEditUserForm(prev => ({ ...prev, isActive: !!checked }))}
+                                />
                                 <Label htmlFor="edit-isActive">Usuario Activo</Label>
                             </div>
                             <DialogFooter>
@@ -803,8 +879,8 @@ export default function UserManagementPage() {
             <Dialog open={isEditTechDialogOpen} onOpenChange={setIsEditTechDialogOpen}>
                 <DialogContent className="bg-white max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-app-gray-900">Editar Técnico</DialogTitle>
-                        <DialogDescription className="text-app-gray-600">
+                        <DialogTitle className="text-gray-900">Editar Técnico</DialogTitle>
+                        <DialogDescription className="text-gray-600">
                             Modifica la información del técnico seleccionado.
                         </DialogDescription>
                     </DialogHeader>
@@ -868,10 +944,10 @@ export default function UserManagementPage() {
             <Dialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
                 <DialogContent className="bg-white max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-app-gray-900 text-red-600">
+                        <DialogTitle className="text-gray-900 text-red-600">
                             ¿Eliminar {deletingItem?.type === "user" ? "Usuario" : "Técnico"}?
                         </DialogTitle>
-                        <DialogDescription className="text-app-gray-600">
+                        <DialogDescription className="text-gray-600">
                             Esta acción no se puede deshacer. Se eliminará permanentemente el usuario &quot;{deletingItem?.name}&quot; y
                             todos sus datos asociados.
                         </DialogDescription>
@@ -886,12 +962,6 @@ export default function UserManagementPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-
-
-
-
-
         </div>
     )
 }

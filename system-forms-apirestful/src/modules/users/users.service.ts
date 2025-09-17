@@ -29,11 +29,15 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { password, towerIds, groupIds, ...userData } = createUserDto;
+    console.log("Creating user with data:", createUserDto);
+
 
     // Check if email already exists
     const existingUser = await this.userRepository.findOne({
       where: { email: userData.email },
     });
+    console.log("Existing user check:", existingUser);
+
 
     if (existingUser) {
       throw new ConflictException('Email already exists');
@@ -60,9 +64,11 @@ export class UsersService {
 
     const savedUser = await this.userRepository.save(user);
 
-    // Assign towers if provided
-    if (towerIds && towerIds.length > 0) {
+    if (towerIds && Array.isArray(towerIds) && towerIds.length > 0) {
+      console.log("Assigning towers to user:", towerIds);
       await this.assignTowersToUser(savedUser.id, towerIds);
+    } else {
+      console.log("No towers to assign - towerIds:", towerIds);
     }
 
     // Assign groups if provided
@@ -73,25 +79,15 @@ export class UsersService {
     return this.findOne(savedUser.id);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<User>> {
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+  async findAll(): Promise<{ data: User[] }> {
 
     const [users, total] = await this.userRepository.findAndCount({
       relations: ['role', 'towers', 'groups'],
-      skip,
-      take: limit,
       order: { createdAt: 'DESC' },
     });
 
     return {
       data: users,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
     };
   }
 
