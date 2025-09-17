@@ -127,9 +127,8 @@ export class FormsService {
     return this.findOne(savedForm.id, user);
   }
 
-  async findAll(paginationDto: PaginationDto, user: RequestUser): Promise<PaginatedResult<Form>> {
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+  async findAll(user: RequestUser): Promise<{data: Form[]}> {
+
 
     const queryBuilder = this.formRepository
       .createQueryBuilder('form')
@@ -151,18 +150,10 @@ export class FormsService {
 
     const [forms, total] = await queryBuilder
       .orderBy('form.createdAt', 'DESC')
-      .skip(skip)
-      .take(limit)
       .getManyAndCount();
 
     return {
       data: forms,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
     };
   }
 

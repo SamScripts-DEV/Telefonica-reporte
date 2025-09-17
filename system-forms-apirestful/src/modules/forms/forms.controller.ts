@@ -45,8 +45,8 @@ export class FormsController {
   //Consumido
   @Get()
   @Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador', 'client')
-  findAll(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
-    return this.formsService.findAll(paginationDto, user);
+  findAll( @GetUser() user: RequestUser) {
+    return this.formsService.findAll(user);
   }
 
   //Consumiendo

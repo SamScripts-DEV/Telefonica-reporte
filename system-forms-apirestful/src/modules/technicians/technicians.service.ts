@@ -22,9 +22,8 @@ export class TechniciansService {
 
 
 
-  async findAll(paginationDto: PaginationDto, user?: RequestUser): Promise<PaginatedResult<Technician>> {
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+  async findAll(user?: RequestUser): Promise<{data: Technician[]}> {
+
 
     const queryBuilder = this.technicianRepository
       .createQueryBuilder('technician')
@@ -42,18 +41,10 @@ export class TechniciansService {
 
     const [technicians, total] = await queryBuilder
       .orderBy('technician.name', 'ASC')
-      .skip(skip)
-      .take(limit)
       .getManyAndCount();
 
     return {
       data: technicians,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
     };
   }
 

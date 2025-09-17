@@ -27,8 +27,8 @@ export class TechniciansController {
 
   @Get()
   //@Roles('dev', 'superadmin', 'pm', 'jefe', 'evaluador')
-  findAll(@Query() paginationDto: PaginationDto, @GetUser() user: RequestUser) {
-    return this.techniciansService.findAll(paginationDto, user);
+  findAll(@GetUser() user: RequestUser) {
+    return this.techniciansService.findAll(user);
   }
 
   @Get('tower/:towerId')

@@ -28,9 +28,7 @@ export class TowersService {
     return this.towerRepository.save(tower);
   }
 
-  async findAll(paginationDto: PaginationDto, user?: RequestUser): Promise<PaginatedResult<Tower>> {
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+  async findAll(user?: RequestUser): Promise<{data: Tower[]}> {
 
     const queryBuilder = this.towerRepository.createQueryBuilder('tower')
       .leftJoinAndSelect('tower.users', 'users')
@@ -47,19 +45,11 @@ export class TowersService {
     }
 
     const [towers, total] = await queryBuilder
-      .skip(skip)
-      .take(limit)
       .orderBy('tower.name', 'ASC')
       .getManyAndCount();
 
     return {
       data: towers,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
     };
   }
 
