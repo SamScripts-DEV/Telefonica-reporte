@@ -22,7 +22,7 @@ const PUBLIC_ROUTES = ['/auth/login', '/auth/register', '/']
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
