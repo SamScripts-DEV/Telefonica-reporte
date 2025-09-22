@@ -12,6 +12,7 @@ import { TechniciansModule } from './modules/technicians/technicians.module';
 import { FormsModule } from './modules/forms/forms.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { GroupsModule } from './modules/groups/groups.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { GroupsModule } from './modules/groups/groups.module';
     FormsModule,
     PermissionsModule,
     GroupsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

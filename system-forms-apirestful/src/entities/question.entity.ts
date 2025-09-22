@@ -15,7 +15,7 @@ export enum QuestionType {
   NUMBER = 'number',
   RADIO = 'radio',
   CHECKBOX = 'checkbox',
-  SCALE = 'scale',
+  RATING = 'rating',
   TEXTAREA = 'textarea'
 }
 

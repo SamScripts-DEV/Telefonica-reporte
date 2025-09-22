@@ -40,6 +40,13 @@ export interface FormData {
   createdAt: string;
   updatedAt: string;
   towers?: Tower[];
+  responses?: FormResponse[];
+  totalResponses?: number;
+  isAnsweredByUser?: boolean;
+  answeredAt?: string | null;
+  answeredInPeriod?: string | null;
+  currentEvaluationPeriod?: string | null;
+  canAnswer?: boolean;
 }
 
 export interface FormResponse {
@@ -49,6 +56,7 @@ export interface FormResponse {
   technicianId: string;
   responses: Record<string, any>;
   submittedAt: string;
+  evaluationPeriod: string;
 }
 
 interface FormState {

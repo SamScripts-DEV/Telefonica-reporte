@@ -30,7 +30,7 @@ export function Navbar() {
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["superadmin", "admin"] },
     { href: "/forms", label: "Formularios", icon: FileText, roles: ["superadmin", "admin"] },
-    // { href: "/reports", label: "Reportes", icon: BarChart, roles: ["superadmin","admin"] },
+    { href: "/reports", label: "Reportes", icon: BarChart, roles: ["superadmin","admin"] },
     { href: "/users", label: "Usuarios", icon: Users, roles: ["superadmin", "admin"] },
   ]
 

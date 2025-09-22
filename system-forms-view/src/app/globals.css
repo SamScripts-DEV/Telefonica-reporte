@@ -85,17 +85,32 @@
   }
 }
 
-/* Scrollbar global delgada y superpuesta */
+/* 1) Reservar espacio de la scrollbar para que no “contraiga” el layout */
+html {
+  scrollbar-gutter: stable both-edges;
+}
+
+/* 2) Cuando Radix bloquea el scroll, evita que agregue padding-right al body */
+body[data-scroll-locked] {
+  padding-right: 0 !important;
+}
+
+/* 3) Asegura un fondo consistente para que no se vea “blanco” detrás */
 html, body {
-  scrollbar-width: thin;         /* Firefox */
-  scrollbar-color: #b3b3b3 #fff; /* Firefox */
+  background: #f3f4f6; /* ajusta al fondo de tu app (gray-100) */
+}
+
+
+html, body {
+  scrollbar-width: thin;         
+  scrollbar-color: #b3b3b3 #fff; 
   overflow-x: hidden;
 }
 
-/* Chrome, Edge, Safari */
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
-  width: 6px;           /* Más delgada */
+  width: 6px;           
 }
 
 html::-webkit-scrollbar-thumb,
@@ -108,4 +123,6 @@ html::-webkit-scrollbar-track,
 body::-webkit-scrollbar-track {
   background: transparent;
 }
+
+
 

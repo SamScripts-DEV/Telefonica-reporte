@@ -41,6 +41,15 @@ export const api_endpoints = {
 
 
         submitBulkEvaluations: 'forms/bulk-submit'
+    },
+
+    reports: {
+        getFormList: '/reports/forms',
+        getFormDashboard: (formId: string) => `/reports/forms/${formId}/dashboard`,
+        getTowerAnalysis: (formId: string, towerId: string) => `/reports/forms/${formId}/towers/${towerId}`,
+        getTechnicianAnalysis: (formId: string, technicianId: string) => `/reports/forms/${formId}/technicians/${technicianId}`,
+        getEvaluatorAnalysis: (formId: string, evaluatorId: string) => `/reports/forms/${formId}/evaluators/${evaluatorId}`,
+        getTowersComparison: (formId: string) => `/reports/forms/${formId}/towers-comparison`,
     }
     
 }

@@ -25,6 +25,8 @@ import {
     Wrench,
     Plus,
     Loader2,
+    ChevronDown,
+    Check,
 } from "lucide-react"
 import {
     Dialog,
@@ -39,6 +41,8 @@ import { useToast } from "@/hooks/use-toast"
 import type { CreateSystemUserDto, CreateTechnicianDto } from "@/types/users-types"
 import { User, Technician, useUserStore } from "@/stores/user-store"
 import { useTowersStore } from "@/stores/towers-store"
+import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenuContent } from "@radix-ui/react-dropdown-menu"
 
 export default function UserManagementPage() {
     const router = useRouter()
@@ -536,27 +540,154 @@ export default function UserManagementPage() {
                                             />
                                         </div>
                                     </div>
-                                    <Select value={roleFilter} onValueChange={setRoleFilter}>
-                                        <SelectTrigger className="w-[140px]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos los roles</SelectItem>
-                                            <SelectItem value="1">Administrador</SelectItem>
-                                            <SelectItem value="2">Cliente</SelectItem>
-                                            <SelectItem value="3">Técnico</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                        <SelectTrigger className="w-[120px]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            <SelectItem value="active">Activos</SelectItem>
-                                            <SelectItem value="inactive">Inactivos</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <DropdownMenu modal={false}>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className="w-[140px] justify-between h-10 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+                                            >
+                                                <span className="block truncate">
+                                                    {roleFilter === "all" && "Todos los roles"}
+                                                    {roleFilter === "1" && "Super Admin"}
+                                                    {roleFilter === "2" && "Admin"}
+                                                    {roleFilter === "3" && "Cliente"}
+                                                </span>
+                                                <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                            align="end"
+                                            className="w-[140px] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                                            sideOffset={4}
+                                        >
+                                            <DropdownMenuItem
+                                                onClick={() => setRoleFilter("all")}
+                                                className={`
+                    relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none 
+                    focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                    ${roleFilter === "all" ? "bg-accent text-accent-foreground" : ""}
+                `}
+                                            >
+                                                {roleFilter === "all" && (
+                                                    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                                                        <Check className="h-4 w-4" />
+                                                    </span>
+                                                )}
+                                                Todos los roles
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => setRoleFilter("1")}
+                                                className={`
+                    relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none 
+                    focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                    ${roleFilter === "1" ? "bg-accent text-accent-foreground" : ""}
+                `}
+                                            >
+                                                {roleFilter === "1" && (
+                                                    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                                                        <Check className="h-4 w-4" />
+                                                    </span>
+                                                )}
+                                                Super Admin
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => setRoleFilter("2")}
+                                                className={`
+                    relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none 
+                    focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                    ${roleFilter === "2" ? "bg-accent text-accent-foreground" : ""}
+                `}
+                                            >
+                                                {roleFilter === "2" && (
+                                                    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                                                        <Check className="h-4 w-4" />
+                                                    </span>
+                                                )}
+                                                Admin
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => setRoleFilter("3")}
+                                                className={`
+                    relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none 
+                    focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                    ${roleFilter === "3" ? "bg-accent text-accent-foreground" : ""}
+                `}
+                                            >
+                                                {roleFilter === "3" && (
+                                                    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                                                        <Check className="h-4 w-4" />
+                                                    </span>
+                                                )}
+                                                Cliente
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <DropdownMenu modal={false}>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className="w-[120px] justify-between h-10 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+                                            >
+                                                <span className="block truncate">
+                                                    {statusFilter === "all" && "Todos"}
+                                                    {statusFilter === "active" && "Activos"}
+                                                    {statusFilter === "inactive" && "Inactivos"}
+                                                </span>
+                                                <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                            align="end"
+                                            className="w-[120px] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                                            sideOffset={4}
+                                        >
+                                            <DropdownMenuItem
+                                                onClick={() => setStatusFilter("all")}
+                                                className={`
+                    relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none 
+                    focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                    ${statusFilter === "all" ? "bg-accent text-accent-foreground" : ""}
+                `}
+                                            >
+                                                {statusFilter === "all" && (
+                                                    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                                                        <Check className="h-4 w-4" />
+                                                    </span>
+                                                )}
+                                                Todos
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => setStatusFilter("active")}
+                                                className={`
+                    relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none 
+                    focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                    ${statusFilter === "active" ? "bg-accent text-accent-foreground" : ""}
+                `}
+                                            >
+                                                {statusFilter === "active" && (
+                                                    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                                                        <Check className="h-4 w-4" />
+                                                    </span>
+                                                )}
+                                                Activos
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => setStatusFilter("inactive")}
+                                                className={`
+                    relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none 
+                    focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                    ${statusFilter === "inactive" ? "bg-accent text-accent-foreground" : ""}
+                `}
+                                            >
+                                                {statusFilter === "inactive" && (
+                                                    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                                                        <Check className="h-4 w-4" />
+                                                    </span>
+                                                )}
+                                                Inactivos
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
 
                                 {/* Users List */}

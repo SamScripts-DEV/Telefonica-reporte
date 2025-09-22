@@ -17,7 +17,29 @@ import { User } from 'src/entities';
 import { response } from 'express';
 import { BulkSubmitDto } from './dto/bulk-evaluation.dto';
 import { BulkSuccess, BulkSkipped, BulkError } from 'src/common/interfaces/results.interface';
-import { log } from 'console';
+
+
+export class FormResponseInfo {
+  responseId: string;
+  userId: string;
+  userName: string;
+  submittedAt: Date;
+  evaluationPeriod?: string;
+}
+
+interface FormWithResponsesDto extends Omit<Form, 'responses'> {
+  responses: FormResponseInfo[];
+  totalResponses: number;
+  isAnsweredByUser: boolean;
+  answeredAt: Date | null;
+  answeredInPeriod: string | null;
+  currentEvaluationPeriod: string | null;
+  canAnswer: boolean;
+}
+
+export class FormsListResponseDto {
+  data: FormWithResponsesDto[];
+}
 
 
 @Injectable()
@@ -127,9 +149,8 @@ export class FormsService {
     return this.findOne(savedForm.id, user);
   }
 
-  async findAll(user: RequestUser): Promise<{data: Form[]}> {
-
-
+  async findAll(user: RequestUser): Promise<FormsListResponseDto> {
+    // 1. Obtener formularios básicos
     const queryBuilder = this.formRepository
       .createQueryBuilder('form')
       .leftJoinAndSelect('form.creator', 'creator')
@@ -148,14 +169,84 @@ export class FormsService {
       }
     }
 
-    const [forms, total] = await queryBuilder
+    const forms = await queryBuilder
       .orderBy('form.createdAt', 'DESC')
-      .getManyAndCount();
+      .getMany();
+
+    console.log(`🔍 Encontrados ${forms.length} formularios`);
+
+    // 2. Para cada formulario, obtener información de respuestas
+    const formsWithResponseInfo = await Promise.all(
+      forms.map(async (form) => {
+        console.log(`📝 Procesando formulario: ${form.title} (${form.id})`);
+
+        // ⭐ LIMPIO: Usar nombres reales de columnas (sin AS)
+        const responses = await this.formResponseRepository
+          .createQueryBuilder('fr')
+          .leftJoin('users', 'u', 'u.id = fr.user_id')
+          .select([
+            'fr.id',
+            'fr.user_id', 
+            'u.name',
+            'fr.submitted_at',
+            'fr.evaluation_period'
+          ])
+          .where('fr.form_id = :formId', { formId: form.id })
+          .orderBy('fr.submitted_at', 'DESC')
+          .getRawMany();
+
+        console.log(`📊 Respuestas encontradas:`, responses.length);
+        console.log(`📊 Sample response:`, responses[0]);
+
+        // ⭐ VERIFICAR: Si el usuario actual ha respondido
+        const userHasResponded = responses.some(r => r.user_id === user.id);
+        console.log(`✅ Usuario ${user.id} ha respondido: ${userHasResponded}`);
+
+        // ⭐ OBTENER: Info de la respuesta del usuario actual  
+        const userResponse = responses.find(r => r.user_id === user.id);
+        console.log(`👤 Respuesta del usuario:`, userResponse);
+
+        return {
+          ...form,
+          // ⭐ MAPEAR: Usando nombres reales de columnas
+          responses: responses.map(r => ({
+            responseId: r.id,
+            userId: r.user_id,
+            userName: r.name,
+            submittedAt: r.submitted_at,
+            evaluationPeriod: r.evaluation_period
+          })),
+          totalResponses: responses.length,
+          isAnsweredByUser: userHasResponded,
+          answeredAt: userResponse?.submitted_at || null,
+          answeredInPeriod: userResponse?.evaluation_period || null,
+          currentEvaluationPeriod: form.type === FormType.PERIODIC ? this.getEvaluationPeriodForForm(form) : null,
+          canAnswer: this.canUserAnswerForm(form, userHasResponded)
+        };
+      })
+    );
 
     return {
-      data: forms,
+      data: formsWithResponseInfo,
     };
-  }
+}
+
+// ⭐ SIMPLIFICAR: El método canUserAnswerForm
+private canUserAnswerForm(form: Form, isAlreadyAnswered: boolean): boolean {
+    // Si ya está contestado, no puede volver a contestar
+    if (isAlreadyAnswered) return false;
+
+    // Si el formulario no está activo, no puede contestar
+    if (form.status !== FormStatus.ACTIVE) return false;
+
+    // Para formularios periódicos, verificar si estamos en período de evaluación
+    if (form.type === FormType.PERIODIC) {
+      return this.isFormWithinActivePeriod(form);
+    }
+
+    // Para formularios single, si está activo y no contestado, puede contestar
+    return true;
+}
 
   async findOne(id: string, user?: RequestUser): Promise<Form> {
     const queryBuilder = this.formRepository
