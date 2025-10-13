@@ -76,6 +76,16 @@ export const formsApi = {
             throw error;
         }
     },
+    changeFormStatus: async (id: string, status: string) => {
+        try {
+            const response = await api.patch(api_endpoints.forms.changeStatusForm(id), { status }, { withCredentials: true });
+            return response.data;
+        } catch (error) {
+            console.error("Error changing form status:", error);
+            throw error;
+            
+        }
+    }
 
 
 

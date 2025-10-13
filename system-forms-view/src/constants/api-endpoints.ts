@@ -12,8 +12,9 @@ export const api_endpoints = {
         createForm: '/forms/create',
         getForms: '/forms',
         getFormById: (id: string) => `/forms/${id}`,
-        updatedForm: (id: string) => `/forms/${id}`, // <-- PATCH
+        updatedForm: (id: string) => `/forms/${id}`, 
         getEvaluationMatrix: (id: number) => `/forms/evaluation-matrix/${id}`,
+        changeStatusForm: (id: string) => `/forms/${id}/status`, 
         
     },
     towers: {

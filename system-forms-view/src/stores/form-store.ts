@@ -76,6 +76,7 @@ interface FormState {
   deleteForm: (id: string) => Promise<void>;
   getEvaluationMatrixByTower: (towerId: number) => Promise<any>;
   submitBulkEvaluations: (data: BulkEvaluationRequest) => Promise<any>;
+  changeFormStatus: (id: string, status: string) => Promise<void>;
 
   // Local state operations
   setForms: (forms: FormData[]) => void;
@@ -219,15 +220,32 @@ export const useFormStore = create<FormState>((set, get) => ({
   },
 
   submitBulkEvaluations: async (data: BulkEvaluationRequest) => {
-  try {
-    set({ isLoading: true, error: null });
-    const response = await formsApi.submitBulkEvaluations(data);
-    set({ isLoading: false });
-    return response;
-  } catch (error: any) {
-    console.error("❌ Store: Error submitting bulk evaluations:", error);
-    set({ error: "Error al enviar evaluaciones masivas", isLoading: false });
-    throw error;
-  }
-},
+    try {
+      set({ isLoading: true, error: null });
+      const response = await formsApi.submitBulkEvaluations(data);
+      set({ isLoading: false });
+      return response;
+    } catch (error: any) {
+      console.error("❌ Store: Error submitting bulk evaluations:", error);
+      set({ error: "Error al enviar evaluaciones masivas", isLoading: false });
+      throw error;
+    }
+  },
+  
+  changeFormStatus: async (id: string, status: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const updatedForm = await formsApi.changeFormStatus(id, status);
+      set((state) => ({
+        forms: state.forms.map((form) =>
+          form.id === id ? { ...form, ...updatedForm } : form
+        ),
+        isLoading: false,
+      }));
+      return updatedForm;
+    } catch (error: any) {
+      set({ error: "Error al cambiar estado del formulario", isLoading: false });
+      throw error;
+    }
+  },
 }));

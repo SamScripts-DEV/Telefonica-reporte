@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/AuthProvider"
 import { useFormStore } from "@/stores/form-store"
@@ -8,18 +8,26 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Plus, MoreHorizontal, Edit, Trash2, Eye, FileText } from "lucide-react"
+import { Plus, MoreHorizontal, Edit, Trash2, Eye, FileText, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { getTowerColor, getFormHeaderColor } from "@/constants/colors" // ✅ Importar funciones helper
 import { useTowersStore } from "@/stores/towers-store"
+import { useToast } from "@/hooks/use-toast"
+
 
 export default function FormsView() {
 
   const { user, isAuthenticated, isLoading } = useAuth()
-  
-  const { forms, getForms, deleteForm, isLoading: formsLoading, error } = useFormStore()
+
+  const { forms, getForms, deleteForm, isLoading: formsLoading, error, changeFormStatus } = useFormStore()
   const { towers, fetchTowers } = useTowersStore()
+
   const router = useRouter()
+  const { toast } = useToast()
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedForm, setSelectedForm] = useState<any>(null);
+  const [newStatus, setNewStatus] = useState<string>("");
 
 
   // ✅ AGREGAR ESTE useEffect:
@@ -89,6 +97,27 @@ export default function FormsView() {
     }
   }
 
+  const handleOpenStatusModal = (form: any) => {
+    setSelectedForm(form);
+    setNewStatus(form.status)
+    setModalOpen(true);
+  };
+  const handleChangeStatus = async () => {
+    if (!selectedForm) return;
+    try {
+      await changeFormStatus(selectedForm.id, newStatus);
+    } catch {
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado del formulario.",
+        variant: "destructive",
+      })
+    } finally {
+      setModalOpen(false);
+      setSelectedForm(null);
+    }
+  };
+
   const safeForms = Array.isArray(forms) ? forms : [];
 
   return (
@@ -151,11 +180,11 @@ export default function FormsView() {
                           </div>
                           <CardTitle className="text-lg text-gray-900">{form.title}</CardTitle>
                         </div>
-                        <CardDescription className="mt-1 text-gray-600">
+                        {/* <CardDescription className="mt-1 text-gray-600">
                           <div className="whitespace-pre-line max-h-20 overflow-y-auto text-sm leading-relaxed">
                             {form.description}
                           </div>
-                        </CardDescription>
+                        </CardDescription> */}
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -176,6 +205,13 @@ export default function FormsView() {
                               Editar
                             </DropdownMenuItem>
                           </Link>
+                          {/* Solo para formularios únicos */}
+                          {form.type === "single" && (
+                            <DropdownMenuItem onClick={() => handleOpenStatusModal(form)}>
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Cambiar estado
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => handleDelete(form.id)}
                             className="text-red-600 hover:bg-red-50"
@@ -187,12 +223,46 @@ export default function FormsView() {
                       </DropdownMenu>
                     </div>
                   </CardHeader>
-                  
+
+                  {modalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+                      <div className="bg-white rounded-lg shadow-lg p-6 min-w-[320px]">
+                        <h2 className="text-lg font-semibold mb-4">Cambiar estado del formulario</h2>
+                        <select
+                          className="w-full border rounded px-3 py-2 mb-4"
+                          value={newStatus}
+                          onChange={e => setNewStatus(e.target.value)}
+                        >
+                          <option value="draft">Borrador</option>
+                          <option value="active">Activo</option>
+                          <option value="closed">Cerrado</option>
+                        </select>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            onClick={() => setModalOpen(false)}
+                            type="button"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                            onClick={handleChangeStatus}
+                            type="button"
+                            disabled={newStatus === selectedForm?.status}
+                          >
+                            Aceptar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Preguntas:</span>
-                        <Badge 
+                        <Badge
                           style={{ backgroundColor: getFormHeaderColor(index) }}
                           className="text-white border-0"
                         >
@@ -204,13 +274,13 @@ export default function FormsView() {
                         <span className="text-gray-600">Estado del formulario:</span>
                         <Badge
                           className={
-                            form.status === "active" 
-                              ? "bg-green-100 text-green-800 border border-green-200" 
+                            form.status === "active"
+                              ? "bg-green-100 text-green-800 border border-green-200"
                               : form.status === "draft"
-                              ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                              : form.status === "closed"
-                              ? "bg-red-100 text-red-800 border border-red-200"
-                              : "bg-gray-100 text-gray-800 border border-gray-200"
+                                ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                                : form.status === "closed"
+                                  ? "bg-red-100 text-red-800 border border-red-200"
+                                  : "bg-gray-100 text-gray-800 border border-gray-200"
                           }
                         >
                           {form.status === "active" && "Activo para responder"}
@@ -224,8 +294,8 @@ export default function FormsView() {
                         <span className="text-gray-600">Visibilidad:</span>
                         <Badge
                           className={
-                            form.isActive 
-                              ? "bg-blue-50 text-blue-700 border border-blue-200" 
+                            form.isActive
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
                               : "bg-red-50 text-red-700 border border-red-200"
                           }
                         >
@@ -236,7 +306,7 @@ export default function FormsView() {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Modalidad:</span>
                         <Badge className="bg-gray-50 text-gray-700 border border-gray-200">
-                          {form.type === "periodic" 
+                          {form.type === "periodic"
                             ? `Periódico (día ${form.startDay} al ${form.endDay})`
                             : "Una sola vez"
                           }
@@ -262,7 +332,7 @@ export default function FormsView() {
                       </div>
 
                       <div className="pt-3 border-t border-gray-200">
-                        <div className="flex gap-2">
+                        {/* <div className="flex gap-2">
                           <Link href={`/forms/${form.id}`} className="flex-1">
                             <Button
                               variant="outline"
@@ -282,7 +352,7 @@ export default function FormsView() {
                               Editar
                             </Button>
                           </Link>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </CardContent>
